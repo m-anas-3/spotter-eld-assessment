@@ -6,6 +6,23 @@ import type {
 } from '../types/trip'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim()
+const REQUEST_TIMEOUT_MS = 60_000
+const DUTY_STATUSES = new Set([
+  'OFF_DUTY',
+  'SLEEPER_BERTH',
+  'DRIVING',
+  'ON_DUTY_NOT_DRIVING',
+])
+const TIMELINE_EVENT_TYPES = new Set([
+  'INITIAL_REST',
+  'DRIVING',
+  'PICKUP',
+  'DROPOFF',
+  'FUEL',
+  'REQUIRED_BREAK',
+  'DAILY_REST',
+  'CYCLE_RESTART',
+])
 
 type JsonRecord = Record<string, unknown>
 
@@ -41,6 +58,11 @@ export async function calculateTrip(
   }
 
   let response: Response
+  const controller = new AbortController()
+  const timeoutId = globalThis.setTimeout(
+    () => controller.abort(),
+    REQUEST_TIMEOUT_MS,
+  )
   try {
     response = await fetch(
       `${API_BASE_URL.replace(/\/+$/, '')}/api/trips/calculate/`,
@@ -51,13 +73,22 @@ export async function calculateTrip(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
+        signal: controller.signal,
       },
     )
   } catch {
+    if (controller.signal.aborted) {
+      throw new ApiClientError(
+        'The trip calculation timed out. Please retry in a moment.',
+        { code: 'REQUEST_TIMEOUT' },
+      )
+    }
     throw new ApiClientError(
       'Unable to reach the trip-planning service. Make sure the Django server is running and try again.',
       { code: 'NETWORK_ERROR' },
     )
+  } finally {
+    globalThis.clearTimeout(timeoutId)
   }
 
   const payload = await readJson(response)
@@ -183,6 +214,7 @@ function isTripResponse(value: unknown): value is TripResponse {
     Array.isArray(value.timeline) &&
     value.timeline.every(isTimelineEvent) &&
     Array.isArray(value.daily_logs) &&
+    value.daily_logs.every(isDailyLog) &&
     Array.isArray(value.assumptions) &&
     value.assumptions.every((assumption) => typeof assumption === 'string')
   )
@@ -213,10 +245,59 @@ function isTimelineEvent(value: unknown): boolean {
   return (
     isRecord(value) &&
     typeof value.type === 'string' &&
+    TIMELINE_EVENT_TYPES.has(value.type) &&
     typeof value.status === 'string' &&
+    DUTY_STATUSES.has(value.status) &&
     typeof value.start_time === 'string' &&
     typeof value.end_time === 'string' &&
-    typeof value.duration_minutes === 'number'
+    typeof value.duration_minutes === 'number' &&
+    typeof value.duration_hours === 'number' &&
+    (value.location === null || typeof value.location === 'string') &&
+    (value.description === null || typeof value.description === 'string')
+  )
+}
+
+function isDailyLog(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    typeof value.date !== 'string' ||
+    !Array.isArray(value.events) ||
+    !value.events.every(isDailyEvent) ||
+    !isRecord(value.status_totals)
+  ) {
+    return false
+  }
+
+  const totals = value.status_totals
+  return [
+    'off_duty_minutes',
+    'sleeper_berth_minutes',
+    'driving_minutes',
+    'on_duty_not_driving_minutes',
+    'off_duty_hours',
+    'sleeper_berth_hours',
+    'driving_hours',
+    'on_duty_not_driving_hours',
+    'total_minutes',
+    'total_hours',
+  ].every((field) => typeof totals[field] === 'number')
+}
+
+function isDailyEvent(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.type === 'string' &&
+    (TIMELINE_EVENT_TYPES.has(value.type) || value.type === 'OFF_DUTY_FILL') &&
+    typeof value.status === 'string' &&
+    DUTY_STATUSES.has(value.status) &&
+    typeof value.start_minute === 'number' &&
+    typeof value.end_minute === 'number' &&
+    typeof value.start_time === 'string' &&
+    typeof value.end_time === 'string' &&
+    typeof value.duration_minutes === 'number' &&
+    typeof value.duration_hours === 'number' &&
+    (value.location === null || typeof value.location === 'string') &&
+    (value.description === null || typeof value.description === 'string')
   )
 }
 

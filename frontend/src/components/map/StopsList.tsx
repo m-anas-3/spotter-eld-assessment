@@ -2,6 +2,7 @@ import BedtimeRoundedIcon from '@mui/icons-material/BedtimeRounded'
 import EvStationRoundedIcon from '@mui/icons-material/EvStationRounded'
 import FlagRoundedIcon from '@mui/icons-material/FlagRounded'
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded'
+import PinDropRoundedIcon from '@mui/icons-material/PinDropRounded'
 import {
   Avatar,
   Box,
@@ -40,7 +41,22 @@ export function StopsList({ stops }: StopsListProps) {
           title="Planned stops"
           description={`${stops.length} route markers`}
         />
-        <Stack sx={{ maxHeight: { md: 680 }, overflowY: { md: 'auto' }, pr: 0.5 }}>
+        {stops.length === 0 ? (
+          <Stack
+            spacing={1.5}
+            sx={{
+              minHeight: 180,
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+              color: 'text.secondary',
+            }}
+          >
+            <PinDropRoundedIcon sx={{ fontSize: 38 }} />
+            <Typography>No planned stops were returned.</Typography>
+          </Stack>
+        ) : (
+        <Stack sx={{ maxHeight: { md: 760 }, overflowY: { md: 'auto' }, pr: 0.5 }}>
           {stops.map((stop, index) => (
             <Box key={stop.id}>
               <Stack direction="row" spacing={1.5} sx={{ py: 1.25 }}>
@@ -95,6 +111,7 @@ export function StopsList({ stops }: StopsListProps) {
             </Box>
           ))}
         </Stack>
+        )}
       </CardContent>
     </Card>
   )

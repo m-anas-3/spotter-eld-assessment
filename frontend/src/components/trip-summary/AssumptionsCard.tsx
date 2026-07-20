@@ -26,7 +26,10 @@ export function AssumptionsCard({ assumptions }: AssumptionsCardProps) {
             listStyle: 'none',
           }}
         >
-          {assumptions.map((assumption) => (
+          {(assumptions.length > 0
+            ? assumptions
+            : ['No additional planning assumptions were returned.']
+          ).map((assumption) => (
             <Stack
               component="li"
               key={assumption}

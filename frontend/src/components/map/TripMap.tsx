@@ -54,7 +54,6 @@ export function TripMap({ route, locations, stops }: TripMapProps) {
   useEffect(() => {
     if (!containerRef.current || !styleUrl) return
 
-    let styleLoaded = false
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: styleUrl,
@@ -65,13 +64,12 @@ export function TripMap({ route, locations, stops }: TripMapProps) {
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
 
     const handleLoad = () => {
-      styleLoaded = true
       setMapError(null)
     }
     const handleError = () => {
-      if (!styleLoaded) {
-        setMapError('The map style could not be loaded.')
-      }
+      setMapError(
+        'The street basemap could not be loaded completely. Check your internet connection and VITE_MAP_STYLE_URL.',
+      )
     }
     map.on('load', handleLoad)
     map.on('error', handleError)

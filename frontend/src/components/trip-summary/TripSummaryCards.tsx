@@ -68,7 +68,7 @@ function SummaryCard({ label, value, detail, icon }: SummaryCardProps) {
 export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
   return (
     <Grid container spacing={2}>
-      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <SummaryCard
           label="Total distance"
           value={`${formatMiles(summary.total_distance_miles)} mi`}
@@ -76,7 +76,7 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
           icon={<RouteRoundedIcon fontSize="small" />}
         />
       </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <SummaryCard
           label="Driving time"
           value={formatHours(summary.estimated_driving_hours)}
@@ -84,7 +84,7 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
           icon={<AccessTimeRoundedIcon fontSize="small" />}
         />
       </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <SummaryCard
           label="Total trip"
           value={formatHours(summary.total_trip_hours)}
@@ -92,7 +92,7 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
           icon={<CalendarMonthRoundedIcon fontSize="small" />}
         />
       </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <SummaryCard
           label="Trip days"
           value={`${summary.total_trip_days}`}
@@ -100,7 +100,7 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
           icon={<HotelRoundedIcon fontSize="small" />}
         />
       </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <SummaryCard
           label="Fuel stops"
           value={`${summary.fuel_stop_count}`}
@@ -108,7 +108,7 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
           icon={<EvStationRoundedIcon fontSize="small" />}
         />
       </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <SummaryCard
           label="Initial cycle"
           value={formatHours(summary.initial_cycle_used_hours)}
@@ -116,7 +116,7 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
           icon={<HistoryRoundedIcon fontSize="small" />}
         />
       </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <SummaryCard
           label="Final cycle"
           value={formatHours(summary.final_cycle_used_hours)}

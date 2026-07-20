@@ -14,6 +14,17 @@ export const formatEventTime = (isoTime: string) =>
 export const formatLogDate = (date: string) =>
   dayjs(date).format('dddd, MMM D')
 
+export const formatEventRange = (startTime: string, endTime: string) => {
+  const start = dayjs(startTime)
+  const end = dayjs(endTime)
+  if (start.isSame(end, 'day')) {
+    return `${start.format('MMM D, YYYY · h:mm A')}–${end.format('h:mm A')}`
+  }
+  return `${start.format('MMM D, YYYY · h:mm A')}–${end.format(
+    'MMM D, YYYY · h:mm A',
+  )}`
+}
+
 export const formatDurationMinutes = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60

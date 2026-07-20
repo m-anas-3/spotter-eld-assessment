@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Box, Container, Grid, Stack, Typography } from '@mui/material'
-import { EldLogsPreview } from '../components/eld/EldLogsPreview'
-import { TimelinePreview } from '../components/eld/TimelinePreview'
+import { DailyEldLogs } from '../components/eld/DailyEldLogs'
+import { TripActivityTimeline } from '../components/eld/TripActivityTimeline'
 import { AppHeader } from '../components/layout/AppHeader'
 import { StopsList } from '../components/map/StopsList'
 import { TripMap } from '../components/map/TripMap'
@@ -59,49 +59,55 @@ export function DashboardPage() {
           </Grid>
 
           <Grid size={{ xs: 12, lg: 9 }}>
-            <Box ref={resultsRef} tabIndex={-1} sx={{ outline: 'none' }}>
-            {!calculation.data && !calculation.isPending && !calculation.isError && (
-              <EmptyResults />
-            )}
+            <Box
+              ref={resultsRef}
+              tabIndex={-1}
+              sx={{ minWidth: 0, outline: 'none' }}
+            >
+              {!calculation.data &&
+                !calculation.isPending &&
+                !calculation.isError && <EmptyResults />}
 
-            {calculation.isPending && <LoadingResults />}
+              {calculation.isPending && <LoadingResults />}
 
-            {calculation.isError && (
-              <ErrorResults
-                onRetry={handleRetry}
-                message={
-                  calculation.error instanceof Error
-                    ? calculation.error.message
-                    : 'Please check your trip details and try again.'
-                }
-              />
-            )}
-
-            {calculation.isSuccess && calculation.data && (
-              <Stack spacing={3}>
-                <Box>
-                  <Typography component="h2" variant="h2" sx={{ mb: 2 }}>
-                    Trip plan
-                  </Typography>
-                  <TripSummaryCards summary={calculation.data.trip_summary} />
-                </Box>
-                <TripMap
-                  route={calculation.data.route}
-                  locations={calculation.data.locations}
-                  stops={calculation.data.stops}
+              {calculation.isError && (
+                <ErrorResults
+                  onRetry={handleRetry}
+                  message={
+                    calculation.error instanceof Error
+                      ? calculation.error.message
+                      : 'Please check your trip details and try again.'
+                  }
                 />
-                <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
-                  <Grid size={{ xs: 12, md: 5 }}>
-                    <StopsList stops={calculation.data.stops} />
+              )}
+
+              {calculation.isSuccess && calculation.data && (
+                <Stack spacing={3}>
+                  <Box>
+                    <Typography component="h2" variant="h2" sx={{ mb: 2 }}>
+                      Trip plan
+                    </Typography>
+                    <TripSummaryCards summary={calculation.data.trip_summary} />
+                  </Box>
+                  <TripMap
+                    route={calculation.data.route}
+                    locations={calculation.data.locations}
+                    stops={calculation.data.stops}
+                  />
+                  <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+                    <Grid size={{ xs: 12, md: 5 }}>
+                      <StopsList stops={calculation.data.stops} />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 7 }}>
+                      <TripActivityTimeline
+                        events={calculation.data.timeline}
+                      />
+                    </Grid>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 7 }}>
-                    <TimelinePreview events={calculation.data.timeline} />
-                  </Grid>
-                </Grid>
-                <EldLogsPreview logs={calculation.data.daily_logs} />
-                <AssumptionsCard assumptions={calculation.data.assumptions} />
-              </Stack>
-            )}
+                  <DailyEldLogs logs={calculation.data.daily_logs} />
+                  <AssumptionsCard assumptions={calculation.data.assumptions} />
+                </Stack>
+              )}
             </Box>
           </Grid>
         </Grid>

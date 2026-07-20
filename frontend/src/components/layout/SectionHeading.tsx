@@ -16,6 +16,7 @@ export function SectionHeading({
     <Box
       sx={{
         display: 'flex',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         gap: 2,
