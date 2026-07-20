@@ -29,7 +29,19 @@ def route_payload(
                     "summary": {
                         "distance": 160_934.4,
                         "duration": 7_200,
-                    }
+                    },
+                    "segments": [
+                        {
+                            "steps": [
+                                {
+                                    "instruction": "Head north",
+                                    "distance": 1_609.344,
+                                    "duration": 120,
+                                    "way_points": [0, 1],
+                                }
+                            ]
+                        }
+                    ],
                 },
                 "geometry": {
                     "type": "LineString",
@@ -140,3 +152,17 @@ class OpenRouteServiceProviderTests(SimpleTestCase):
         )
         self.assertEqual(result.geometry[0], [-87.6298, 41.8781])
         self.assertEqual(result.geometry[-1], [-88.1234, 42.5678])
+
+    def test_route_instructions_are_preserved(self) -> None:
+        self.client.request.return_value = json_response(200, route_payload())
+
+        result = self.provider.get_route(
+            [(-87.6298, 41.8781), (-88.0, 42.2)],
+            ["Chicago", "Milwaukee"],
+        )
+
+        instruction = result.legs[0].instructions[0]
+        self.assertEqual(instruction.instruction, "Head north")
+        self.assertEqual(instruction.distance_miles, 1.0)
+        self.assertEqual(instruction.duration_minutes, 2.0)
+        self.assertEqual(instruction.coordinate, [-87.6298, 41.8781])

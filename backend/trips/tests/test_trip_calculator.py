@@ -3,7 +3,13 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from trips.services.routing import Coordinate, RouteLeg, RouteResult, RoutingProvider
+from trips.services.routing import (
+    Coordinate,
+    RouteInstruction,
+    RouteLeg,
+    RouteResult,
+    RoutingProvider,
+)
 from trips.services.trip_calculator import calculate_trip
 
 
@@ -36,6 +42,14 @@ class FakeRoutingProvider(RoutingProvider):
                 distance_miles=100,
                 duration_minutes=120,
                 geometry=[[-90.0, 40.0], [-89.0, 41.0]],
+                instructions=[
+                    RouteInstruction(
+                        instruction="Continue toward pickup",
+                        distance_miles=100,
+                        duration_minutes=120,
+                        coordinate=[-90.0, 40.0],
+                    )
+                ],
             ),
             RouteLeg(
                 start_label="Pickup",
@@ -80,8 +94,11 @@ class TripCalculatorTests(SimpleTestCase):
             [-90.0, 40.0],
         )
         self.assertEqual(result["route"]["type"], "LineString")
-        self.assertEqual(len(result["route"]["legs"]), 2)
         self.assertEqual(len(result["route_legs"]), 2)
+        self.assertEqual(
+            result["route_legs"][0]["instructions"][0]["instruction"],
+            "Continue toward pickup",
+        )
         self.assertTrue(result["daily_logs"])
         self.assertTrue(
             all(

@@ -8,7 +8,13 @@ from typing import Any
 import httpx
 
 from trips.exceptions import ServiceError
-from trips.services.routing import Coordinate, RouteLeg, RouteResult, RoutingProvider
+from trips.services.routing import (
+    Coordinate,
+    RouteInstruction,
+    RouteLeg,
+    RouteResult,
+    RoutingProvider,
+)
 
 
 METERS_TO_MILES = 0.000621371192
@@ -141,6 +147,10 @@ class OpenRouteServiceProvider(RoutingProvider):
             duration_minutes = max(1, round(float(summary["duration"]) / 60))
             if not math.isfinite(distance_miles) or distance_miles <= 0:
                 raise RoutingProviderError()
+            instructions = self._parse_instructions(
+                feature["properties"].get("segments"),
+                geometry,
+            )
         except RoutingProviderError:
             raise
         except (KeyError, TypeError, ValueError, IndexError):
@@ -152,7 +162,65 @@ class OpenRouteServiceProvider(RoutingProvider):
             distance_miles=distance_miles,
             duration_minutes=duration_minutes,
             geometry=geometry,
+            instructions=instructions,
         )
+
+    @staticmethod
+    def _parse_instructions(
+        segments: object,
+        geometry: list[list[float]],
+    ) -> list[RouteInstruction]:
+        if not isinstance(segments, list):
+            return []
+
+        instructions: list[RouteInstruction] = []
+        for segment in segments:
+            if not isinstance(segment, dict):
+                continue
+            steps = segment.get("steps")
+            if not isinstance(steps, list):
+                continue
+
+            for step in steps:
+                if not isinstance(step, dict):
+                    continue
+                text = step.get("instruction")
+                if not isinstance(text, str) or not text.strip():
+                    continue
+                try:
+                    distance_miles = (
+                        float(step.get("distance", 0)) * METERS_TO_MILES
+                    )
+                    duration_minutes = float(step.get("duration", 0)) / 60
+                except (TypeError, ValueError):
+                    continue
+                if not (
+                    math.isfinite(distance_miles)
+                    and distance_miles >= 0
+                    and math.isfinite(duration_minutes)
+                    and duration_minutes >= 0
+                ):
+                    continue
+
+                coordinate: list[float] | None = None
+                way_points = step.get("way_points")
+                if (
+                    isinstance(way_points, list)
+                    and way_points
+                    and isinstance(way_points[0], int)
+                    and 0 <= way_points[0] < len(geometry)
+                ):
+                    coordinate = geometry[way_points[0]]
+
+                instructions.append(
+                    RouteInstruction(
+                        instruction=text.strip(),
+                        distance_miles=round(distance_miles, 2),
+                        duration_minutes=round(duration_minutes, 2),
+                        coordinate=coordinate,
+                    )
+                )
+        return instructions
 
     def _request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         try:

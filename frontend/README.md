@@ -55,6 +55,7 @@ without recalculating routes, HOS constraints, stops, or ELD totals.
 ## Maps and ELD logs
 
 - Route geometry is read as GeoJSON `LineString`.
+- Turn-by-turn directions are grouped by route leg.
 - All map coordinates remain in `[longitude, latitude]` order.
 - Full timestamps are formatted with Day.js.
 - Each ELD day uses backend-provided `start_minute` and `end_minute` values on

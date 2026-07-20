@@ -103,7 +103,7 @@ The response has this structure:
 {
   "trip_summary": {},
   "locations": {},
-  "route": {"type": "LineString", "coordinates": [], "legs": []},
+  "route": {"type": "LineString", "coordinates": []},
   "route_legs": [],
   "stops": [],
   "timeline": [],
@@ -111,6 +111,9 @@ The response has this structure:
   "assumptions": []
 }
 ```
+
+Each `route_legs` entry contains distance, duration, geometry, and
+turn-by-turn `instructions` from OpenRouteService.
 
 `timeline` contains timezone-aware ISO-8601 timestamps. Each `daily_logs`
 entry represents one UTC calendar date and contains ordered SVG-ready events

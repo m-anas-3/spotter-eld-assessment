@@ -4,6 +4,7 @@ import { DailyEldLogs } from '../components/eld/DailyEldLogs'
 import { TripActivityTimeline } from '../components/eld/TripActivityTimeline'
 import { AppHeader } from '../components/layout/AppHeader'
 import { StopsList } from '../components/map/StopsList'
+import { RouteDirections } from '../components/map/RouteDirections'
 import { TripMap } from '../components/map/TripMap'
 import { TripForm } from '../components/trip-form/TripForm'
 import {
@@ -94,6 +95,7 @@ export function DashboardPage() {
                     locations={calculation.data.locations}
                     stops={calculation.data.stops}
                   />
+                  <RouteDirections legs={calculation.data.route_legs} />
                   <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
                     <Grid size={{ xs: 12, md: 5 }}>
                       <StopsList stops={calculation.data.stops} />

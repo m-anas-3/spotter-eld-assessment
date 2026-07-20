@@ -209,6 +209,7 @@ function isTripResponse(value: unknown): value is TripResponse {
     Array.isArray(route.coordinates) &&
     route.coordinates.every(isCoordinate) &&
     Array.isArray(value.route_legs) &&
+    value.route_legs.every(isRouteLeg) &&
     Array.isArray(value.stops) &&
     value.stops.every(isStop) &&
     Array.isArray(value.timeline) &&
@@ -217,6 +218,30 @@ function isTripResponse(value: unknown): value is TripResponse {
     value.daily_logs.every(isDailyLog) &&
     Array.isArray(value.assumptions) &&
     value.assumptions.every((assumption) => typeof assumption === 'string')
+  )
+}
+
+function isRouteLeg(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.start_label === 'string' &&
+    typeof value.end_label === 'string' &&
+    typeof value.distance_miles === 'number' &&
+    typeof value.duration_minutes === 'number' &&
+    Array.isArray(value.geometry) &&
+    value.geometry.every(isCoordinate) &&
+    Array.isArray(value.instructions) &&
+    value.instructions.every(isRouteInstruction)
+  )
+}
+
+function isRouteInstruction(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.instruction === 'string' &&
+    typeof value.distance_miles === 'number' &&
+    typeof value.duration_minutes === 'number' &&
+    (value.coordinate === null || isCoordinate(value.coordinate))
   )
 }
 

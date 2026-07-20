@@ -45,18 +45,25 @@ export interface TripLocations {
   dropoff: TripLocation
 }
 
+export interface RouteInstruction {
+  instruction: string
+  distance_miles: number
+  duration_minutes: number
+  coordinate: Coordinate | null
+}
+
 export interface RouteLeg {
   start_label: string
   end_label: string
   distance_miles: number
   duration_minutes: number
   geometry: Coordinate[]
+  instructions: RouteInstruction[]
 }
 
 export interface GeoJsonRoute {
   type: 'LineString'
   coordinates: Coordinate[]
-  legs?: RouteLeg[]
 }
 
 export interface Stop {
@@ -126,14 +133,4 @@ export interface TripResponse {
   timeline: TimelineEvent[]
   daily_logs: DailyEldLog[]
   assumptions: string[]
-}
-
-export interface ApiErrorDetail {
-  code: string
-  message: string
-  details: Record<string, unknown>
-}
-
-export interface ApiError {
-  error: ApiErrorDetail
 }

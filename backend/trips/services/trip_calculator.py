@@ -132,7 +132,6 @@ def _route_response(route: RouteResult) -> dict[str, Any]:
     return {
         "type": "LineString",
         "coordinates": route.geometry,
-        "legs": _route_legs_response(route),
     }
 
 
@@ -144,6 +143,15 @@ def _route_legs_response(route: RouteResult) -> list[dict[str, Any]]:
             "distance_miles": round(leg.distance_miles, 2),
             "duration_minutes": leg.duration_minutes,
             "geometry": leg.geometry,
+            "instructions": [
+                {
+                    "instruction": instruction.instruction,
+                    "distance_miles": instruction.distance_miles,
+                    "duration_minutes": instruction.duration_minutes,
+                    "coordinate": instruction.coordinate,
+                }
+                for instruction in leg.instructions
+            ],
         }
         for leg in route.legs
     ]
