@@ -3,6 +3,7 @@ import MapRoundedIcon from '@mui/icons-material/MapRounded'
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   CircularProgress,
@@ -75,11 +76,21 @@ export function LoadingResults() {
   )
 }
 
-export function ErrorResults({ message }: { message: string }) {
+interface ErrorResultsProps {
+  message: string
+  onRetry: () => void
+}
+
+export function ErrorResults({ message, onRetry }: ErrorResultsProps) {
   return (
     <Alert
       severity="error"
       icon={<ErrorOutlineRoundedIcon />}
+      action={
+        <Button color="inherit" size="small" onClick={onRetry}>
+          Retry
+        </Button>
+      }
       sx={{ alignItems: 'center' }}
     >
       <Typography sx={{ fontWeight: 700 }}>Trip calculation failed</Typography>

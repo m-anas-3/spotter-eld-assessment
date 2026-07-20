@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
-import { calculateMockTrip } from '../api/mockTrip'
+import { calculateTrip } from '../api/client'
 
 export const useTripCalculation = () =>
   useMutation({
-    mutationFn: calculateMockTrip,
+    mutationFn: calculateTrip,
   })
