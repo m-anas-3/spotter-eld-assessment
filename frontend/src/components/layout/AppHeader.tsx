@@ -1,60 +1,56 @@
-import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded'
-import { Box, Chip, Container, Stack, Typography } from '@mui/material'
+import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
+import { Box, Container, Stack, Typography } from '@mui/material'
 
 export function AppHeader() {
   return (
     <Box
       component="header"
+      className="app-header"
       sx={{
-        color: 'common.white',
-        background:
-          'linear-gradient(120deg, #0C3B36 0%, #145F52 55%, #1B7563 100%)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+        height: 64,
+        bgcolor: 'background.paper',
         borderBottom: '1px solid',
-        borderColor: 'rgba(255,255,255,0.14)',
+        borderColor: 'divider',
       }}
     >
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
+      <Container maxWidth="xl" sx={{ height: '100%' }}>
         <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          sx={{
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            justifyContent: 'space-between',
-            gap: 2,
-          }}
+          direction="row"
+          sx={{ height: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
         >
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
             <Box
+              aria-hidden="true"
               sx={{
                 display: 'grid',
                 placeItems: 'center',
-                width: 48,
-                height: 48,
-                borderRadius: 2.5,
-                bgcolor: 'rgba(255,255,255,0.13)',
-                border: '1px solid rgba(255,255,255,0.18)',
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+                borderRadius: 1,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
               }}
             >
-              <LocalShippingRoundedIcon fontSize="medium" />
+              <RouteOutlinedIcon sx={{ fontSize: 19 }} />
             </Box>
-            <Box>
-              <Typography component="h1" variant="h1" sx={{ fontSize: '1.65rem' }}>
-                RouteLog
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: 'baseline', minWidth: 0 }}>
+              <Typography sx={{ fontSize: '0.9375rem', fontWeight: 650 }}>RouteLog</Typography>
+              <Typography
+                color="text.secondary"
+                sx={{ display: { xs: 'none', sm: 'block' }, fontSize: '0.75rem' }}
+              >
+                Trip planner
               </Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,0.72)', mt: 0.25 }}>
-                Trucking trip planner &amp; ELD log generator
-              </Typography>
-            </Box>
+            </Stack>
           </Stack>
-          <Chip
-            label="70-hour / 8-day cycle"
-            size="small"
-            sx={{
-              color: 'common.white',
-              bgcolor: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.18)',
-              fontWeight: 650,
-            }}
-          />
+
+          <Typography color="text.secondary" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+            70-hour / 8-day rules
+          </Typography>
         </Stack>
       </Container>
     </Box>

@@ -1,128 +1,93 @@
-import AltRouteRoundedIcon from '@mui/icons-material/AltRouteRounded'
-import NavigationRoundedIcon from '@mui/icons-material/NavigationRounded'
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
-  Avatar,
   Box,
-  Card,
-  CardContent,
-  Chip,
   Divider,
   Stack,
   Typography,
 } from '@mui/material'
 import type { RouteLeg } from '../../types/trip'
-import {
-  formatDurationMinutes,
-  formatMiles,
-} from '../../utils/formatters'
-import { SectionHeading } from '../layout/SectionHeading'
+import { formatDurationMinutes, formatMiles } from '../../utils/formatters'
 
 interface RouteDirectionsProps {
   legs: RouteLeg[]
 }
 
 export function RouteDirections({ legs }: RouteDirectionsProps) {
-  const instructionCount = legs.reduce(
-    (total, leg) => total + leg.instructions.length,
-    0,
-  )
+  const instructionCount = legs.reduce((total, leg) => total + leg.instructions.length, 0)
 
   return (
-    <Card>
-      <CardContent sx={{ p: { xs: 2.5, md: 3 }, '&:last-child': { pb: 3 } }}>
-        <SectionHeading
-          title="Driving directions"
-          description="Turn-by-turn instructions for each route leg"
-          action={
-            <Chip
-              icon={<AltRouteRoundedIcon />}
-              label={`${instructionCount} steps`}
-              size="small"
-              variant="outlined"
-            />
-          }
-        />
-
+    <Accordion
+      disableGutters
+      elevation={0}
+      sx={{
+        mt: 2.5,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: '8px !important',
+        '&::before': { display: 'none' },
+      }}
+    >
+      <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+        <Box>
+          <Typography component="h3" variant="h3">
+            Driving directions
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+            {instructionCount} turn-by-turn {instructionCount === 1 ? 'step' : 'steps'}
+          </Typography>
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails sx={{ pt: 0 }}>
         {instructionCount === 0 ? (
-          <Alert severity="info">
-            Turn-by-turn instructions were not returned for this route.
-          </Alert>
+          <Alert severity="info">Turn-by-turn instructions were not returned for this route.</Alert>
         ) : (
-          <Stack spacing={2.5}>
+          <Stack spacing={3}>
             {legs.map((leg, legIndex) => (
               <Box key={`${leg.start_label}-${leg.end_label}`}>
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}
-                  sx={{
-                    justifyContent: 'space-between',
-                    alignItems: { xs: 'flex-start', sm: 'center' },
-                    gap: 1,
-                    mb: 1.25,
-                  }}
+                  sx={{ justifyContent: 'space-between', gap: 0.5, mb: 1 }}
                 >
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography component="h3" variant="h3">
-                      Leg {legIndex + 1}: {leg.start_label} → {leg.end_label}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatMiles(leg.distance_miles)} mi ·{' '}
-                    {formatDurationMinutes(leg.duration_minutes)}
+                  <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, overflowWrap: 'anywhere' }}>
+                    Leg {legIndex + 1}: {leg.start_label} → {leg.end_label}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                    {formatMiles(leg.distance_miles)} mi · {formatDurationMinutes(leg.duration_minutes)}
                   </Typography>
                 </Stack>
 
                 <Box
                   component="ol"
                   aria-label={`Directions from ${leg.start_label} to ${leg.end_label}`}
-                  sx={{
-                    maxHeight: 360,
-                    overflowY: 'auto',
-                    listStyle: 'none',
-                    p: 0,
-                    pr: 0.5,
-                    m: 0,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                  }}
+                  sx={{ maxHeight: 360, overflowY: 'auto', listStyle: 'none', p: 0, m: 0 }}
                 >
                   {leg.instructions.map((instruction, index) => (
-                    <Box
-                      component="li"
-                      key={`${instruction.instruction}-${index}`}
-                      sx={{ px: 1.5, py: 1.25 }}
-                    >
-                      <Stack direction="row" spacing={1.5}>
-                        <Avatar
-                          sx={{
-                            width: 30,
-                            height: 30,
-                            bgcolor: 'primary.light',
-                            color: 'primary.main',
-                          }}
+                    <Box component="li" key={`${instruction.instruction}-${index}`}>
+                      <Stack direction="row" spacing={1.25} sx={{ py: 1.1 }}>
+                        <Typography
+                          aria-hidden="true"
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ width: 24, flexShrink: 0, textAlign: 'right' }}
                         >
-                          <NavigationRoundedIcon sx={{ fontSize: 17 }} />
-                        </Avatar>
+                          {index + 1}
+                        </Typography>
                         <Box sx={{ minWidth: 0, flex: 1 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 700, overflowWrap: 'anywhere' }}
-                          >
+                          <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
                             {instruction.instruction}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {formatMiles(instruction.distance_miles)} mi
                             {instruction.duration_minutes > 0 &&
-                              ` · ${formatDurationMinutes(
-                                Math.max(1, Math.round(instruction.duration_minutes)),
-                              )}`}
+                              ` · ${formatDurationMinutes(Math.max(1, Math.round(instruction.duration_minutes)))}`}
                           </Typography>
                         </Box>
                       </Stack>
-                      {index < leg.instructions.length - 1 && (
-                        <Divider sx={{ mt: 1.25, ml: 5.75 }} />
-                      )}
+                      {index < leg.instructions.length - 1 && <Divider sx={{ ml: 4.5 }} />}
                     </Box>
                   ))}
                 </Box>
@@ -130,7 +95,7 @@ export function RouteDirections({ legs }: RouteDirectionsProps) {
             ))}
           </Stack>
         )}
-      </CardContent>
-    </Card>
+      </AccordionDetails>
+    </Accordion>
   )
 }

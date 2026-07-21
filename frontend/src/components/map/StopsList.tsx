@@ -1,118 +1,82 @@
-import BedtimeRoundedIcon from '@mui/icons-material/BedtimeRounded'
-import EvStationRoundedIcon from '@mui/icons-material/EvStationRounded'
-import FlagRoundedIcon from '@mui/icons-material/FlagRounded'
-import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded'
-import PinDropRoundedIcon from '@mui/icons-material/PinDropRounded'
-import {
-  Avatar,
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Box, Divider, Stack, Typography } from '@mui/material'
 import type { Stop } from '../../types/trip'
-import {
-  formatDurationMinutes,
-  formatEventTime,
-} from '../../utils/formatters'
-import { SectionHeading } from '../layout/SectionHeading'
+import { formatDurationMinutes, formatEventTime } from '../../utils/formatters'
 
 interface StopsListProps {
   stops: Stop[]
 }
 
-const iconForStop = (type: string) => {
-  if (type === 'FUEL') return <EvStationRoundedIcon fontSize="small" />
-  if (type === 'DAILY_REST' || type === 'CYCLE_RESTART') {
-    return <BedtimeRoundedIcon fontSize="small" />
-  }
-  if (type === 'DROPOFF') return <FlagRoundedIcon fontSize="small" />
-  return <LocationOnRoundedIcon fontSize="small" />
-}
-
 export function StopsList({ stops }: StopsListProps) {
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent sx={{ p: { xs: 2.5, md: 3 }, '&:last-child': { pb: 3 } }}>
-        <SectionHeading
-          title="Planned stops"
-          description={`${stops.length} route markers`}
-        />
-        {stops.length === 0 ? (
-          <Stack
-            spacing={1.5}
-            sx={{
-              minHeight: 180,
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              color: 'text.secondary',
-            }}
-          >
-            <PinDropRoundedIcon sx={{ fontSize: 38 }} />
-            <Typography>No planned stops were returned.</Typography>
-          </Stack>
-        ) : (
-        <Stack sx={{ maxHeight: { md: 760 }, overflowY: { md: 'auto' }, pr: 0.5 }}>
+    <Box sx={{ height: '100%', p: 2 }}>
+      <Typography component="h3" variant="h3">
+        Route stops
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.5 }}>
+        {stops.length} {stops.length === 1 ? 'stop' : 'stops'} in travel order
+      </Typography>
+
+      {stops.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+          No route stops were returned.
+        </Typography>
+      ) : (
+        <Box
+          component="ol"
+          aria-label="Stops in route order"
+          sx={{ maxHeight: { lg: 560 }, overflowY: { lg: 'auto' }, listStyle: 'none', p: 0, m: 0 }}
+        >
           {stops.map((stop, index) => (
-            <Box key={stop.id}>
-              <Stack direction="row" spacing={1.5} sx={{ py: 1.25 }}>
-                <Avatar
+            <Box component="li" key={stop.id}>
+              <Stack direction="row" spacing={1.25} sx={{ py: 1.5, alignItems: 'flex-start' }}>
+                <Box
+                  aria-hidden="true"
                   sx={{
-                    width: 34,
-                    height: 34,
-                    bgcolor: 'primary.light',
-                    color: 'primary.main',
+                    display: 'grid',
+                    placeItems: 'center',
+                    width: 28,
+                    height: 28,
+                    flexShrink: 0,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: '50%',
+                    color: 'text.secondary',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
                   }}
                 >
-                  {iconForStop(stop.type)}
-                </Avatar>
+                  {index + 1}
+                </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Stack
-                    direction="row"
-                    sx={{ justifyContent: 'space-between', gap: 1 }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 700, overflowWrap: 'anywhere' }}
-                    >
-                      {stop.label}
+                  <Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
+                    {stop.label}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
+                    {readableType(stop.type)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.65 }}>
+                    {formatEventTime(stop.arrival_time)} – {formatEventTime(stop.departure_time)}
+                  </Typography>
+                  {stop.duration_minutes > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDurationMinutes(stop.duration_minutes)}
                     </Typography>
-                    <Chip
-                      label={stop.type.replaceAll('_', ' ')}
-                      size="small"
-                      variant="outlined"
-                      sx={{ height: 21, fontSize: '0.62rem', flexShrink: 0 }}
-                    />
-                  </Stack>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: 'block' }}
-                  >
-                    Arrive {formatEventTime(stop.arrival_time)}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: 'block' }}
-                  >
-                    Depart {formatEventTime(stop.departure_time)}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Duration: {formatDurationMinutes(stop.duration_minutes)}
-                  </Typography>
+                  )}
                 </Box>
               </Stack>
-              {index < stops.length - 1 && <Divider sx={{ ml: 6 }} />}
+              {index < stops.length - 1 && <Divider sx={{ ml: 5 }} />}
             </Box>
           ))}
-        </Stack>
-        )}
-      </CardContent>
-    </Card>
+        </Box>
+      )}
+    </Box>
   )
+}
+
+function readableType(type: string): string {
+  return type
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }

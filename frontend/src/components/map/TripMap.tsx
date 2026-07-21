@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import MapRoundedIcon from '@mui/icons-material/MapRounded'
-import { Alert, Box, Card, CardContent, Chip, Typography } from '@mui/material'
+import { Alert, Box, Typography } from '@mui/material'
 import maplibregl, {
   type GeoJSONSource,
   type Map,
@@ -13,10 +12,11 @@ import type {
   TripLocations,
 } from '../../types/trip'
 import { formatEventTime } from '../../utils/formatters'
-import { SectionHeading } from '../layout/SectionHeading'
+import { appTokens } from '../../theme'
 import './TripMap.css'
 
 const ROUTE_SOURCE_ID = 'trip-route'
+const ROUTE_CASING_LAYER_ID = 'trip-route-casing'
 const ROUTE_LAYER_ID = 'trip-route-line'
 const SPECIAL_STOP_TYPES = new Set([
   'FUEL',
@@ -112,121 +112,63 @@ export function TripMap({ route, locations, stops }: TripMapProps) {
     }
   }, [locations, stops, validRouteCoordinates])
 
-  const locationItems = [
-    { type: 'Current', location: locations.current },
-    { type: 'Pickup', location: locations.pickup },
-    { type: 'Drop-off', location: locations.dropoff },
-  ]
-
   return (
-    <Card>
-      <CardContent sx={{ p: { xs: 2.5, md: 3 }, '&:last-child': { pb: 3 } }}>
-        <SectionHeading
-          title="Route overview"
-          description="Interactive route and planned stop markers"
-          action={
-            <Chip
-              icon={<MapRoundedIcon />}
-              label="Live route"
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          }
-        />
+    <Box sx={{ height: '100%', p: 2 }}>
+      <Typography component="h3" variant="h3">
+        Route map
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.5 }}>
+        Select a marker for stop details.
+      </Typography>
 
+      {!styleUrl && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Add VITE_MAP_STYLE_URL to the frontend environment to display the map.
+        </Alert>
+      )}
+      {mapError && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {mapError}
+        </Alert>
+      )}
+
+      <Box sx={{ position: 'relative' }}>
         <Box
+          ref={containerRef}
+          role="region"
+          aria-label="Interactive trip route map"
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-            gap: 1,
-            mb: 2,
+            width: '100%',
+            height: { xs: 400, sm: 480, lg: 560 },
+            overflow: 'hidden',
+            borderRadius: 1,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'action.hover',
           }}
-        >
-          {locationItems.map(({ type, location }) => (
-            <Box
-              key={type}
-              sx={{
-                minWidth: 0,
-                px: 1.5,
-                py: 1.25,
-                borderRadius: 1.5,
-                bgcolor: '#F8FAFB',
-                border: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'block', fontWeight: 700 }}
-              >
-                {type}
-              </Typography>
-              <Typography
-                variant="body2"
-                title={location.label}
-                sx={{
-                  mt: 0.25,
-                  fontWeight: 700,
-                  overflowWrap: 'anywhere',
-                }}
-              >
-                {location.label}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-
-        {!styleUrl && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Add VITE_MAP_STYLE_URL to the frontend environment to display the map.
-          </Alert>
-        )}
-        {mapError && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {mapError}
-          </Alert>
-        )}
-
-        <Box sx={{ position: 'relative' }}>
-          <Box
-            ref={containerRef}
-            aria-label="Interactive trip route map"
+        />
+        {validRouteCoordinates.length < 2 && (
+          <Alert
+            severity="info"
             sx={{
-              width: '100%',
-              height: { xs: 360, sm: 440, lg: 500 },
-              overflow: 'hidden',
-              borderRadius: 2.5,
-              border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: '#E8EFED',
+              position: 'absolute',
+              left: 16,
+              right: 16,
+              bottom: 16,
             }}
-          />
-          {validRouteCoordinates.length < 2 && (
-            <Alert
-              severity="info"
-              sx={{
-                position: 'absolute',
-                left: 16,
-                right: 16,
-                bottom: 16,
-                boxShadow: 1,
-              }}
-            >
-              Route geometry is unavailable, but valid location markers can
-              still be displayed.
-            </Alert>
-          )}
-        </Box>
-      </CardContent>
-    </Card>
+          >
+            Route geometry is unavailable, but valid location markers can still be displayed.
+          </Alert>
+        )}
+      </Box>
+    </Box>
   )
 }
 
 function updateRoute(map: Map, coordinates: Coordinate[]) {
   if (coordinates.length < 2) {
     if (map.getLayer(ROUTE_LAYER_ID)) map.removeLayer(ROUTE_LAYER_ID)
+    if (map.getLayer(ROUTE_CASING_LAYER_ID)) map.removeLayer(ROUTE_CASING_LAYER_ID)
     if (map.getSource(ROUTE_SOURCE_ID)) map.removeSource(ROUTE_SOURCE_ID)
     return
   }
@@ -251,6 +193,23 @@ function updateRoute(map: Map, coordinates: Coordinate[]) {
     })
   }
 
+  if (!map.getLayer(ROUTE_CASING_LAYER_ID)) {
+    map.addLayer({
+      id: ROUTE_CASING_LAYER_ID,
+      type: 'line',
+      source: ROUTE_SOURCE_ID,
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+      paint: {
+        'line-color': appTokens.colors.routeCasing,
+        'line-width': 8,
+        'line-opacity': 0.92,
+      },
+    })
+  }
+
   if (!map.getLayer(ROUTE_LAYER_ID)) {
     map.addLayer({
       id: ROUTE_LAYER_ID,
@@ -261,9 +220,9 @@ function updateRoute(map: Map, coordinates: Coordinate[]) {
         'line-join': 'round',
       },
       paint: {
-        'line-color': '#146B5A',
-        'line-width': 5,
-        'line-opacity': 0.9,
+        'line-color': appTokens.colors.primary,
+        'line-width': 4.5,
+        'line-opacity': 0.96,
       },
     })
   }
@@ -312,13 +271,18 @@ function createMarkers(
 
   return markers.map((markerData) => {
     const element = document.createElement('button')
+    const operational = SPECIAL_STOP_TYPES.has(markerData.type)
     element.type = 'button'
-    element.className = `trip-map-marker trip-map-marker--${markerData.type
-      .toLowerCase()
-      .replaceAll('_', '-')}`
+    element.className = `trip-map-marker${operational ? ' trip-map-marker--operational' : ''}`
     element.textContent = markerLabel(markerData.type)
     element.setAttribute('aria-label', `${readableType(markerData.type)}: ${markerData.label}`)
     element.title = markerData.label
+
+    const appearance = markerAppearance(markerData.type)
+    element.style.setProperty('--marker-background', appearance.background)
+    element.style.setProperty('--marker-color', appearance.color)
+    element.style.setProperty('--marker-border', appearance.border)
+    element.style.setProperty('--marker-focus', appTokens.colors.primary)
 
     const popup = new maplibregl.Popup({
       offset: 18,
@@ -331,6 +295,28 @@ function createMarkers(
       .setPopup(popup)
       .addTo(map)
   })
+}
+
+function markerAppearance(type: string) {
+  if (type === 'PICKUP' || type === 'DROPOFF') {
+    return {
+      background: appTokens.colors.primary,
+      color: appTokens.colors.surface,
+      border: appTokens.colors.surface,
+    }
+  }
+  if (SPECIAL_STOP_TYPES.has(type)) {
+    return {
+      background: appTokens.colors.surface,
+      color: appTokens.colors.text,
+      border: appTokens.colors.text,
+    }
+  }
+  return {
+    background: appTokens.colors.text,
+    color: appTokens.colors.surface,
+    border: appTokens.colors.surface,
+  }
 }
 
 function createPopupContent(marker: MarkerData): HTMLElement {

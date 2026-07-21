@@ -1,13 +1,5 @@
-import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded'
-import {
-  Alert,
-  Box,
-  Chip,
-  Divider,
-  Grid,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Alert, Box, Divider, Paper, Stack, Typography } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import type { DailyEldEvent, DailyEldLog, DutyStatus } from '../../types/trip'
 import {
   clampMinute,
@@ -30,60 +22,62 @@ const GRAPH_BOTTOM = GRAPH_TOP + ROW_HEIGHT * ELD_STATUS_ROWS.length
 
 interface EldLogSheetProps {
   log: DailyEldLog
+  idPrefix?: string
 }
 
-export function EldLogSheet({ log }: EldLogSheetProps) {
+export function EldLogSheet({ log, idPrefix = 'eld' }: EldLogSheetProps) {
+  const theme = useTheme()
   const events = getOrderedDailyEvents(log.events)
   const hasValidTotal = isExactDailyTotal(log.status_totals.total_minutes)
-  const titleId = `eld-title-${log.date}`
-  const descriptionId = `eld-description-${log.date}`
+  const titleId = `${idPrefix}-eld-title-${log.date}`
+  const descriptionId = `${idPrefix}-eld-description-${log.date}`
 
   return (
-    <Box
+    <Paper
       component="article"
+      variant="outlined"
+      className="eld-document"
       aria-labelledby={titleId}
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        overflow: 'hidden',
-      }}
+      sx={{ overflow: 'hidden', borderRadius: 0.75, bgcolor: 'background.paper' }}
     >
       <Stack
+        className="eld-document-header"
         direction={{ xs: 'column', sm: 'row' }}
         sx={{
           px: { xs: 2, sm: 2.5 },
           py: 1.75,
-          bgcolor: '#F8FAFB',
           justifyContent: 'space-between',
           alignItems: { xs: 'flex-start', sm: 'center' },
           gap: 1,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Box>
-          <Typography id={titleId} component="h3" variant="h3">
+          <Typography id={titleId} component="h4" variant="h3">
             {formatLogDate(log.date)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Driver’s daily record of duty status
           </Typography>
         </Box>
-        <Chip
-          color={hasValidTotal ? 'success' : 'warning'}
-          label={`${log.status_totals.total_hours} total hours`}
-          size="small"
-          variant={hasValidTotal ? 'outlined' : 'filled'}
-        />
+        <Typography
+          variant="body2"
+          color={hasValidTotal ? 'success.main' : 'warning.main'}
+          sx={{ fontWeight: 600 }}
+        >
+          {hasValidTotal ? '24 hours verified' : `${log.status_totals.total_hours} hours recorded`}
+        </Typography>
       </Stack>
 
       {!hasValidTotal && (
-        <Alert severity="warning" sx={{ borderRadius: 0 }}>
-          This log totals {log.status_totals.total_minutes} minutes instead of
-          the required 1,440 minutes.
+        <Alert severity="warning" sx={{ m: 2 }}>
+          This log totals {log.status_totals.total_minutes} minutes instead of 1,440 minutes.
         </Alert>
       )}
 
       <Box
+        className="eld-graph-scroll"
         role="region"
         aria-label={`Scrollable ELD graph for ${formatLogDate(log.date)}`}
         tabIndex={0}
@@ -98,12 +92,13 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
           },
         }}
       >
-        <Box sx={{ minWidth: SVG_WIDTH, lineHeight: 0 }}>
+        <Box className="eld-graph-inner" sx={{ minWidth: SVG_WIDTH, lineHeight: 0 }}>
           <svg
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
             width="100%"
             role="img"
             aria-labelledby={`${titleId} ${descriptionId}`}
+            style={{ fontFamily: theme.typography.fontFamily }}
           >
             <desc id={descriptionId}>
               A 24-hour ELD graph with four rows for off duty, sleeper berth,
@@ -115,7 +110,7 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
               y={GRAPH_TOP}
               width={GRAPH_WIDTH}
               height={GRAPH_BOTTOM - GRAPH_TOP}
-              fill="#FBFCFD"
+              fill={theme.palette.background.paper}
             />
 
             {Array.from({ length: 97 }, (_, index) => {
@@ -128,7 +123,7 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
                   x2={x}
                   y1={GRAPH_TOP}
                   y2={GRAPH_BOTTOM}
-                  stroke={isMajorHour ? '#BAC5CC' : '#E7ECEF'}
+                  stroke={isMajorHour ? theme.palette.divider : theme.palette.action.hover}
                   strokeWidth={isMajorHour ? 1 : 0.6}
                 />
               )
@@ -136,17 +131,16 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
 
             {Array.from({ length: 25 }, (_, hour) => {
               const x = minuteToX(hour * 60)
+              const emphasized = hour === 0 || hour === 12 || hour === 24
               return (
                 <text
                   key={`hour-${hour}`}
                   x={x}
                   y={42}
-                  textAnchor={
-                    hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle'
-                  }
-                  fill="#607080"
-                  fontSize={hour === 0 || hour === 12 || hour === 24 ? 12 : 10}
-                  fontWeight={hour === 0 || hour === 12 || hour === 24 ? 700 : 500}
+                  textAnchor={hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle'}
+                  fill={theme.palette.text.secondary}
+                  fontSize={emphasized ? 12 : 10}
+                  fontWeight={emphasized ? 600 : 400}
                 >
                   {hourLabel(hour)}
                 </text>
@@ -157,11 +151,11 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
               x={LABEL_WIDTH + GRAPH_WIDTH + TOTAL_WIDTH / 2}
               y={42}
               textAnchor="middle"
-              fill="#607080"
+              fill={theme.palette.text.secondary}
               fontSize="11"
-              fontWeight="700"
+              fontWeight="600"
             >
-              TOTAL
+              Total
             </text>
 
             {ELD_STATUS_ROWS.map((row, index) => {
@@ -173,26 +167,20 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
                     x2={LABEL_WIDTH + GRAPH_WIDTH}
                     y1={GRAPH_TOP + index * ROW_HEIGHT}
                     y2={GRAPH_TOP + index * ROW_HEIGHT}
-                    stroke="#BAC5CC"
+                    stroke={theme.palette.divider}
                     strokeWidth="1"
                   />
-                  <circle cx={18} cy={y} r={5} fill={statusColor(row.status)} />
-                  <text
-                    x={31}
-                    y={y + 4}
-                    fill="#263543"
-                    fontSize="12"
-                    fontWeight="650"
-                  >
+                  <circle cx={18} cy={y} r={4} fill={theme.palette.text.secondary} />
+                  <text x={31} y={y + 4} fill={theme.palette.text.primary} fontSize="12" fontWeight="500">
                     {row.label}
                   </text>
                   <text
                     x={LABEL_WIDTH + GRAPH_WIDTH + TOTAL_WIDTH / 2}
                     y={y + 4}
                     textAnchor="middle"
-                    fill="#263543"
+                    fill={theme.palette.text.primary}
                     fontSize="13"
-                    fontWeight="700"
+                    fontWeight="600"
                   >
                     {formatTotal(log.status_totals[row.totalKey])}
                   </text>
@@ -205,24 +193,21 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
               x2={LABEL_WIDTH + GRAPH_WIDTH}
               y1={GRAPH_BOTTOM}
               y2={GRAPH_BOTTOM}
-              stroke="#BAC5CC"
-              strokeWidth="1"
+              stroke={theme.palette.divider}
             />
             <line
               x1={LABEL_WIDTH}
               x2={LABEL_WIDTH}
               y1={GRAPH_TOP}
               y2={GRAPH_BOTTOM}
-              stroke="#8796A2"
-              strokeWidth="1.25"
+              stroke={theme.palette.text.secondary}
             />
             <line
               x1={LABEL_WIDTH + GRAPH_WIDTH}
               x2={LABEL_WIDTH + GRAPH_WIDTH}
               y1={GRAPH_TOP}
               y2={GRAPH_BOTTOM}
-              stroke="#8796A2"
-              strokeWidth="1.25"
+              stroke={theme.palette.text.secondary}
             />
 
             {events.map((event, index) => {
@@ -242,13 +227,12 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
                     x2={endX}
                     y1={y}
                     y2={y}
-                    stroke={statusColor(event.status)}
-                    strokeWidth="4"
-                    strokeLinecap="round"
+                    stroke={theme.palette.text.primary}
+                    strokeWidth="3"
+                    strokeLinecap="square"
                   >
                     <title>
-                      {event.start_time}–{event.end_time}:{' '}
-                      {event.description ?? event.type}
+                      {event.start_time}–{event.end_time}: {event.description ?? event.type}
                     </title>
                   </line>
                   {shouldConnect && (
@@ -257,7 +241,7 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
                       x2={endX}
                       y1={y}
                       y2={statusY(nextEvent.status)}
-                      stroke="#263543"
+                      stroke={theme.palette.text.primary}
                       strokeWidth="2"
                     />
                   )}
@@ -268,128 +252,88 @@ export function EldLogSheet({ log }: EldLogSheetProps) {
         </Box>
       </Box>
 
-      <Box sx={{ px: { xs: 2, sm: 2.5 }, pb: 2.5 }}>
-        <Typography component="h4" variant="h3" sx={{ mb: 1.5 }}>
-          Status totals
+      <Box className="eld-document-details" sx={{ px: { xs: 2, sm: 2.5 }, pb: 2.5 }}>
+        <Typography component="h5" variant="h3" sx={{ mb: 1.25 }}>
+          Duty-status totals
         </Typography>
-        <Grid container spacing={1}>
+        <Box
+          className="eld-totals"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(5, minmax(0, 1fr))' },
+            borderTop: '1px solid',
+            borderLeft: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
           {ELD_STATUS_ROWS.map((row) => (
-            <Grid key={row.status} size={{ xs: 6, sm: 4, md: 2.4 }}>
-              <Box
-                sx={{
-                  height: '100%',
-                  p: 1.25,
-                  borderRadius: 1.5,
-                  bgcolor: '#F8FAFB',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block' }}
-                >
-                  {row.label}
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 0.25, fontWeight: 750 }}>
-                  {formatTotal(log.status_totals[row.totalKey])}
-                </Typography>
-              </Box>
-            </Grid>
+            <TotalCell
+              key={row.status}
+              label={row.label}
+              value={formatTotal(log.status_totals[row.totalKey])}
+            />
           ))}
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <Box
-              sx={{
-                height: '100%',
-                p: 1.25,
-                borderRadius: 1.5,
-                bgcolor: hasValidTotal ? 'primary.light' : 'warning.light',
-                border: '1px solid',
-                borderColor: hasValidTotal ? 'primary.main' : 'warning.main',
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'block' }}
-              >
-                Total
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 0.25, fontWeight: 800 }}>
-                {formatTotal(log.status_totals.total_hours)}
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
+          <TotalCell label="Total" value={formatTotal(log.status_totals.total_hours)} emphasized />
+        </Box>
 
         <Divider sx={{ my: 2.5 }} />
 
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ alignItems: 'center', mb: 1.5 }}
-        >
-          <AccessTimeRoundedIcon color="primary" fontSize="small" />
-          <Typography component="h4" variant="h3">
-            Event remarks
-          </Typography>
-        </Stack>
+        <Typography component="h5" variant="h3" sx={{ mb: 1 }}>
+          Remarks and activity
+        </Typography>
         <Box
           component="ol"
+          className="eld-remarks"
           aria-label={`ELD event remarks for ${formatLogDate(log.date)}`}
           sx={{ listStyle: 'none', p: 0, m: 0 }}
         >
           {events.map((event, index) => (
             <Box
               component="li"
+              className="eld-remarks-row"
               key={`${event.type}-remark-${event.start_minute}-${index}`}
               sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: '120px 1fr' },
-                gap: { xs: 0.5, sm: 1.5 },
-                py: 1.25,
+                gridTemplateColumns: { xs: '1fr', md: '120px 170px 170px minmax(0, 1fr)' },
+                gap: { xs: 0.35, md: 1.5 },
+                py: 1.1,
                 borderTop: index === 0 ? 'none' : '1px solid',
                 borderColor: 'divider',
               }}
             >
-              <Typography variant="body2" sx={{ fontWeight: 750 }}>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 {event.start_time}–{event.end_time}
               </Typography>
-              <Box sx={{ minWidth: 0 }}>
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  sx={{
-                    alignItems: { xs: 'flex-start', sm: 'center' },
-                    gap: { xs: 0.5, sm: 1 },
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 700, overflowWrap: 'anywhere' }}
-                  >
-                    {readableEventType(event)}
-                  </Typography>
-                  <Chip
-                    label={readableDutyStatus(event.status)}
-                    size="small"
-                    variant="outlined"
-                    sx={{ height: 21, fontSize: '0.65rem' }}
-                  />
-                </Stack>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 0.25, overflowWrap: 'anywhere' }}
-                >
-                  {[event.description, event.location].filter(Boolean).join(' · ') ||
-                    'No remarks'}
-                </Typography>
-              </Box>
+              <Typography variant="body2">{readableEventType(event)}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {readableDutyStatus(event.status)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
+                {[event.description, event.location].filter(Boolean).join(' · ') || 'No remarks'}
+              </Typography>
             </Box>
           ))}
         </Box>
       </Box>
+    </Paper>
+  )
+}
+
+interface TotalCellProps {
+  label: string
+  value: string
+  emphasized?: boolean
+}
+
+function TotalCell({ label, value, emphasized = false }: TotalCellProps) {
+  return (
+    <Box sx={{ p: 1.25, borderRight: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Typography variant="caption" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ mt: 0.25, fontWeight: emphasized ? 600 : 500 }}>
+        {value}
+      </Typography>
     </Box>
   )
 }
@@ -399,21 +343,8 @@ function minuteToX(minute: number): number {
 }
 
 function statusY(status: DutyStatus): number {
-  const rowIndex = Math.max(
-    0,
-    ELD_STATUS_ROWS.findIndex((row) => row.status === status),
-  )
+  const rowIndex = Math.max(0, ELD_STATUS_ROWS.findIndex((row) => row.status === status))
   return GRAPH_TOP + rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2
-}
-
-function statusColor(status: DutyStatus): string {
-  const colors: Record<DutyStatus, string> = {
-    OFF_DUTY: '#657481',
-    SLEEPER_BERTH: '#6657A8',
-    DRIVING: '#146B5A',
-    ON_DUTY_NOT_DRIVING: '#D77E21',
-  }
-  return colors[status]
 }
 
 function hourLabel(hour: number): string {

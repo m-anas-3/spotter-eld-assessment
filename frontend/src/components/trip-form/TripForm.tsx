@@ -1,20 +1,6 @@
-import ExploreRoundedIcon from '@mui/icons-material/ExploreRounded'
-import FlagRoundedIcon from '@mui/icons-material/FlagRounded'
-import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded'
-import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded'
-import RouteRoundedIcon from '@mui/icons-material/RouteRounded'
-import {
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  InputAdornment,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Box, Button, Card, CardContent, CircularProgress, Slider, Stack, TextField, Typography } from '@mui/material'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { tripRequestSchema } from '../../schemas/tripSchema'
 import type { TripRequest } from '../../types/trip'
 
@@ -32,6 +18,7 @@ const defaultValues: TripRequest = {
 
 export function TripForm({ isLoading, onSubmit }: TripFormProps) {
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -41,115 +28,127 @@ export function TripForm({ isLoading, onSubmit }: TripFormProps) {
   })
 
   return (
-    <Card component="aside">
-      <CardContent sx={{ p: { xs: 2.5, md: 3 }, '&:last-child': { pb: 3 } }}>
-        <Stack spacing={0.75} sx={{ mb: 3 }}>
-          <Typography component="h2" variant="h2">
-            Plan your trip
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Enter the route details and your current cycle usage.
-          </Typography>
-        </Stack>
+    <Card component="aside" className="trip-form-card">
+      <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+        <Typography component="h2" variant="h3">
+          Trip details
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Enter locations in travel order.
+        </Typography>
 
         <Stack
           component="form"
           noValidate
-          spacing={2.25}
+          spacing={2}
           onSubmit={handleSubmit(onSubmit)}
+          sx={{ mt: 2.5 }}
         >
-          <TextField
-            label="Current location"
-            placeholder="City, state or address"
-            fullWidth
-            autoComplete="street-address"
-            error={Boolean(errors.current_location)}
-            helperText={errors.current_location?.message}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <ExploreRoundedIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-              },
-            }}
-            {...register('current_location')}
-          />
+          <Box>
+            <Typography component="label" htmlFor="current-location" variant="body2" sx={{ fontWeight: 600 }}>
+              Current location
+            </Typography>
+            <TextField
+              id="current-location"
+              placeholder="City, state or address"
+              fullWidth
+              autoComplete="street-address"
+              error={Boolean(errors.current_location)}
+              helperText={errors.current_location?.message}
+              sx={{ mt: 0.75 }}
+              {...register('current_location')}
+            />
+          </Box>
 
-          <TextField
-            label="Pickup location"
-            placeholder="City, state or address"
-            fullWidth
-            error={Boolean(errors.pickup_location)}
-            helperText={errors.pickup_location?.message}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LocationOnRoundedIcon color="primary" fontSize="small" />
-                  </InputAdornment>
-                ),
-              },
-            }}
-            {...register('pickup_location')}
-          />
+          <Box>
+            <Typography component="label" htmlFor="pickup-location" variant="body2" sx={{ fontWeight: 600 }}>
+              Pickup location
+            </Typography>
+            <TextField
+              id="pickup-location"
+              placeholder="City, state or address"
+              fullWidth
+              autoComplete="off"
+              error={Boolean(errors.pickup_location)}
+              helperText={errors.pickup_location?.message}
+              sx={{ mt: 0.75 }}
+              {...register('pickup_location')}
+            />
+          </Box>
 
-          <TextField
-            label="Drop-off location"
-            placeholder="City, state or address"
-            fullWidth
-            error={Boolean(errors.dropoff_location)}
-            helperText={errors.dropoff_location?.message}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <FlagRoundedIcon color="secondary" fontSize="small" />
-                  </InputAdornment>
-                ),
-              },
-            }}
-            {...register('dropoff_location')}
-          />
+          <Box>
+            <Typography component="label" htmlFor="dropoff-location" variant="body2" sx={{ fontWeight: 600 }}>
+              Drop-off location
+            </Typography>
+            <TextField
+              id="dropoff-location"
+              placeholder="City, state or address"
+              fullWidth
+              autoComplete="off"
+              error={Boolean(errors.dropoff_location)}
+              helperText={errors.dropoff_location?.message}
+              sx={{ mt: 0.75 }}
+              {...register('dropoff_location')}
+            />
+          </Box>
 
-          <TextField
-            label="Current cycle used"
-            type="number"
-            fullWidth
-            error={Boolean(errors.current_cycle_used_hours)}
-            helperText={
-              errors.current_cycle_used_hours?.message ??
-              'Enter a value from 0 to 70 hours'
-            }
-            slotProps={{
-              htmlInput: { min: 0, max: 70, step: 0.5 },
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LocalShippingRoundedIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: <InputAdornment position="end">hours</InputAdornment>,
-              },
-            }}
-            {...register('current_cycle_used_hours', { valueAsNumber: true })}
-          />
+          <Controller
+            name="current_cycle_used_hours"
+            control={control}
+            render={({ field }) => {
+              const value = Number.isFinite(field.value) ? field.value : 0
+              const cycleError = errors.current_cycle_used_hours?.message
 
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={isLoading}
-            startIcon={
-              isLoading ? (
-                <CircularProgress color="inherit" size={18} />
-              ) : (
-                <RouteRoundedIcon />
+              return (
+                <Box sx={{ pt: 0.5 }}>
+                  <Stack
+                    direction="row"
+                    sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}
+                  >
+                    <Box>
+                      <Typography component="label" htmlFor="cycle-hours" variant="body2" sx={{ fontWeight: 600 }}>
+                        Cycle hours already used
+                      </Typography>
+                      <Typography variant="caption" color={cycleError ? 'error.main' : 'text.secondary'}>
+                        {cycleError ?? `${value} of 70 hours used`}
+                      </Typography>
+                    </Box>
+                    <TextField
+                      id="cycle-hours"
+                      type="number"
+                      value={Number.isFinite(field.value) ? field.value : ''}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.value === '' ? Number.NaN : Number(event.target.value),
+                        )
+                      }
+                      onBlur={field.onBlur}
+                      error={Boolean(cycleError)}
+                      sx={{ width: 88, flexShrink: 0 }}
+                      slotProps={{
+                        htmlInput: { min: 0, max: 70, step: 0.5, 'aria-label': 'Cycle hours already used' },
+                      }}
+                      inputRef={field.ref}
+                    />
+                  </Stack>
+                  <Slider
+                    value={value}
+                    onChange={(_, nextValue) => field.onChange(nextValue)}
+                    min={0}
+                    max={70}
+                    step={0.5}
+                    size="small"
+                    aria-label="Cycle hours already used"
+                    sx={{ mt: 1, mb: -0.5 }}
+                  />
+                </Box>
               )
-            }
-          >
-            {isLoading ? 'Calculating route…' : 'Calculate trip'}
+            }}
+          />
+
+          <Button type="submit" variant="contained" fullWidth disabled={isLoading}>
+            {isLoading && <CircularProgress color="inherit" size={16} sx={{ mr: 1 }} />}
+            {isLoading ? 'Calculating…' : 'Calculate trip'}
           </Button>
         </Stack>
       </CardContent>
