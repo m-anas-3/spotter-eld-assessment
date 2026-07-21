@@ -39,7 +39,7 @@ export function DailyEldLogs({ logs }: DailyEldLogsProps) {
             Daily ELD logs
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-            {logs.length} log {logs.length === 1 ? 'sheet' : 'sheets'}
+            {logs.length} {logs.length === 1 ? 'log sheet' : 'log sheets'}
           </Typography>
         </Box>
         <Tabs

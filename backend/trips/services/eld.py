@@ -1,6 +1,7 @@
 """Generate validated, midnight-split daily ELD log sheets."""
 
 from datetime import UTC, date, datetime, time, timedelta
+import math
 from typing import Any
 
 from trips.constants import DutyStatus
@@ -9,6 +10,22 @@ from trips.services.scheduling import format_datetime
 
 
 MINUTES_PER_DAY = 24 * 60
+PROJECTED_LOG_METADATA: dict[str, str | None] = {
+    "record_type": "PROJECTED",
+    "time_zone": "UTC",
+    "period_start": "00:00",
+    "driver_name": None,
+    "driver_id": None,
+    "co_driver_name": None,
+    "carrier_name": None,
+    "main_office_address": None,
+    "tractor_number": None,
+    "trailer_number": None,
+    "shipping_document_number": None,
+    "shipper_name": None,
+    "commodity": None,
+    "certification_status": "NOT_CERTIFIED",
+}
 STATUS_TOTAL_KEYS = {
     DutyStatus.OFF_DUTY.value: "off_duty",
     DutyStatus.SLEEPER_BERTH.value: "sleeper_berth",
@@ -93,6 +110,13 @@ def _validate_timeline(
         except (KeyError, TypeError):
             raise TimelineValidationError() from None
 
+        distance = event.get("distance_miles")
+        invalid_distance = distance is not None and (
+            isinstance(distance, bool)
+            or not isinstance(distance, (int, float))
+            or not math.isfinite(float(distance))
+            or float(distance) < 0
+        )
         if (
             not isinstance(duration, int)
             or duration <= 0
@@ -100,6 +124,7 @@ def _validate_timeline(
             or end <= start
             or (end - start).total_seconds() != duration * 60
             or (previous_end is not None and start != previous_end)
+            or invalid_distance
         ):
             raise TimelineValidationError()
         parsed.append((event, start, end))
@@ -129,6 +154,7 @@ def _build_daily_log(
                 coverage_start,
                 "Off duty before trip start",
                 day_start,
+                parsed_events[0][0].get("location"),
             )
         )
 
@@ -147,6 +173,7 @@ def _build_daily_log(
                 day_end,
                 "Off duty after trip completion",
                 day_start,
+                parsed_events[-1][0].get("location"),
             )
         )
 
@@ -156,6 +183,14 @@ def _build_daily_log(
         "date": log_date.isoformat(),
         "events": daily_events,
         "status_totals": totals,
+        "total_driving_miles": round(
+            sum(
+                float(event["distance_miles"] or 0)
+                for event in daily_events
+            ),
+            2,
+        ),
+        "log_metadata": PROJECTED_LOG_METADATA.copy(),
     }
 
 
@@ -165,6 +200,13 @@ def _event_piece(
     end: datetime,
     day_start: datetime,
 ) -> dict[str, Any]:
+    event_duration = event["duration_minutes"]
+    piece_duration = int((end - start).total_seconds() // 60)
+    distance = event.get("distance_miles")
+    piece_distance: float | None = None
+    if isinstance(distance, (int, float)) and not isinstance(distance, bool):
+        piece_distance = round(float(distance) * piece_duration / event_duration, 4)
+
     return _daily_event(
         event_type=event["type"],
         status=event["status"],
@@ -174,6 +216,7 @@ def _event_piece(
         location=event.get("location"),
         description=event.get("description"),
         coordinate=event.get("coordinate"),
+        distance_miles=piece_distance,
     )
 
 
@@ -182,6 +225,7 @@ def _fill_event(
     end: datetime,
     description: str,
     day_start: datetime,
+    location: str | None,
 ) -> dict[str, Any]:
     return _daily_event(
         event_type="OFF_DUTY_FILL",
@@ -189,9 +233,10 @@ def _fill_event(
         start=start,
         end=end,
         day_start=day_start,
-        location=None,
+        location=location,
         description=description,
         coordinate=None,
+        distance_miles=None,
     )
 
 
@@ -205,6 +250,7 @@ def _daily_event(
     location: str | None,
     description: str | None,
     coordinate: list[float] | None,
+    distance_miles: float | None,
 ) -> dict[str, Any]:
     duration_minutes = int((end - start).total_seconds() // 60)
     start_minute = int((start - day_start).total_seconds() // 60)
@@ -225,6 +271,9 @@ def _daily_event(
         "location": location,
         "description": description,
         "coordinate": coordinate,
+        "distance_miles": (
+            None if distance_miles is None else round(distance_miles, 2)
+        ),
     }
 
 
@@ -264,6 +313,9 @@ def _status_totals(events: list[dict[str, Any]]) -> dict[str, int | float]:
         totals[f"{key}_hours"] = round(value / 60, 2)
     totals["total_minutes"] = sum(minutes.values())
     totals["total_hours"] = round(totals["total_minutes"] / 60, 2)
+    on_duty_minutes = minutes["driving"] + minutes["on_duty_not_driving"]
+    totals["total_on_duty_minutes"] = on_duty_minutes
+    totals["total_on_duty_hours"] = round(on_duty_minutes / 60, 2)
     return totals
 
 

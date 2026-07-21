@@ -9,6 +9,7 @@ from trips.services.openrouteservice import (
     DIRECTIONS_URL,
     GEOCODE_URL,
     OpenRouteServiceProvider,
+    REVERSE_GEOCODE_URL,
     RoutingProviderError,
 )
 
@@ -78,6 +79,12 @@ class OpenRouteServiceProviderTests(SimpleTestCase):
         coordinate = self.provider.geocode("Chicago, IL")
 
         self.assertEqual(coordinate, (-87.6298, 41.8781))
+        request_kwargs = self.client.request.call_args.kwargs
+        self.assertEqual(
+            request_kwargs["headers"]["Authorization"],
+            "test-api-key",
+        )
+        self.assertNotIn("api_key", request_kwargs["params"])
 
     def test_current_heigit_api_endpoints_are_used(self) -> None:
         self.assertEqual(
@@ -91,6 +98,38 @@ class OpenRouteServiceProviderTests(SimpleTestCase):
                 "directions/driving-hgv/geojson"
             ),
         )
+        self.assertEqual(
+            REVERSE_GEOCODE_URL,
+            "https://api.heigit.org/pelias/v1/reverse",
+        )
+
+    def test_reverse_geocoding_returns_city_and_state(self) -> None:
+        self.client.request.return_value = json_response(
+            200,
+            {
+                "features": [
+                    {
+                        "properties": {
+                            "locality": "Madison",
+                            "region_a": "WI",
+                            "label": "Madison, WI, USA",
+                        }
+                    }
+                ]
+            },
+        )
+
+        label = self.provider.reverse_geocode((-89.4012, 43.0731))
+
+        self.assertEqual(label, "Madison, WI")
+        request_kwargs = self.client.request.call_args.kwargs
+        self.assertEqual(
+            request_kwargs["headers"]["Authorization"],
+            "test-api-key",
+        )
+        self.assertNotIn("api_key", request_kwargs["params"])
+        self.assertEqual(request_kwargs["params"]["point.lon"], -89.4012)
+        self.assertEqual(request_kwargs["params"]["point.lat"], 43.0731)
 
     def test_missing_api_key_is_handled(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
@@ -150,6 +189,7 @@ class OpenRouteServiceProviderTests(SimpleTestCase):
             request_kwargs["json"]["coordinates"],
             [[-87.6298, 41.8781], [-88.1234, 42.5678]],
         )
+        self.assertTrue(request_kwargs["json"]["geometry_simplify"])
         self.assertEqual(result.geometry[0], [-87.6298, 41.8781])
         self.assertEqual(result.geometry[-1], [-88.1234, 42.5678])
 

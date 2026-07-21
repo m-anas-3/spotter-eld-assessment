@@ -1,21 +1,14 @@
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Accordion, AccordionDetails, AccordionSummary, Box, Typography } from '@mui/material'
 
 interface AssumptionsCardProps {
   assumptions: string[]
 }
 
 export function AssumptionsCard({ assumptions }: AssumptionsCardProps) {
-  const items = assumptions.length
-    ? assumptions
-    : ['No additional planning assumptions were returned.']
+  if (assumptions.length === 0) {
+    return null
+  }
 
   return (
     <Accordion
@@ -30,14 +23,9 @@ export function AssumptionsCard({ assumptions }: AssumptionsCardProps) {
       }}
     >
       <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-        <Box>
-          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
-            Calculation assumptions
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {items.length} rules used for this trip
-          </Typography>
-        </Box>
+        <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
+          Calculation assumptions
+        </Typography>
       </AccordionSummary>
       <AccordionDetails sx={{ pt: 0 }}>
         <Box
@@ -46,33 +34,18 @@ export function AssumptionsCard({ assumptions }: AssumptionsCardProps) {
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
             gap: 1,
-            p: 0,
-            m: 0,
-            listStyle: 'none',
+            pl: 2.5,
+            pr: 0,
+            py: 0,
+            my: 0,
           }}
         >
-          {items.map((assumption) => (
-            <Stack
-              component="li"
-              key={assumption}
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'flex-start', p: 1 }}
-            >
-              <Box
-                sx={{
-                  width: 5,
-                  height: 5,
-                  mt: 0.8,
-                  flexShrink: 0,
-                  borderRadius: '50%',
-                  bgcolor: 'text.secondary',
-                }}
-              />
-              <Typography variant="body2" color="text.secondary">
+          {assumptions.map((assumption) => (
+            <Box component="li" key={assumption} sx={{ pl: 0.25, pr: 1, py: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" component="span">
                 {assumption}
               </Typography>
-            </Stack>
+            </Box>
           ))}
         </Box>
       </AccordionDetails>

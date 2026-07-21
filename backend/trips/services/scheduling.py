@@ -15,8 +15,10 @@ MAX_DAILY_DRIVING_MINUTES = 11 * 60
 WORK_WINDOW_MINUTES = 14 * 60
 BREAK_DRIVING_MINUTES = 8 * 60
 CYCLE_LIMIT_MINUTES = 70 * 60
+PRE_TRIP_INSPECTION_MINUTES = 30
 PICKUP_MINUTES = 60
 DROPOFF_MINUTES = 60
+POST_TRIP_INSPECTION_MINUTES = 30
 FUEL_MINUTES = 30
 REQUIRED_BREAK_MINUTES = 30
 DAILY_REST_MINUTES = 10 * 60
@@ -73,6 +75,16 @@ class HOSScheduler:
             arrival=self.current_time,
             departure=self.current_time,
             duration_minutes=0,
+            location=self.route.legs[0].start_label,
+        )
+
+        self._add_fixed_activity(
+            EventType.PRE_TRIP_INSPECTION,
+            PRE_TRIP_INSPECTION_MINUTES,
+            self.route.legs[0].start_label,
+            self.route.geometry[0],
+            "Pre-trip vehicle inspection",
+            include_stop=False,
         )
 
         self._drive_leg(
@@ -97,6 +109,14 @@ class HOSScheduler:
             self.route.legs[1].end_label,
             self.route.legs[1].geometry[-1],
             "Unloading at drop-off location",
+        )
+        self._add_fixed_activity(
+            EventType.POST_TRIP_INSPECTION,
+            POST_TRIP_INSPECTION_MINUTES,
+            self.route.legs[1].end_label,
+            self.route.legs[1].geometry[-1],
+            "Post-trip vehicle inspection",
+            include_stop=False,
         )
 
         return ScheduleResult(
@@ -155,16 +175,16 @@ class HOSScheduler:
                     remaining_distance * chunk_minutes / remaining_minutes
                 )
 
+            start_coordinate = self._current_coordinate()
             self.route_distance_completed += chunk_distance
             remaining_minutes -= chunk_minutes
             remaining_distance = max(0.0, remaining_distance - chunk_distance)
-            coordinate = self._current_coordinate()
             self._add_event(
                 event_type=EventType.DRIVING,
                 status=DutyStatus.DRIVING,
                 duration_minutes=chunk_minutes,
                 location=f"Between {leg.start_label} and {leg.end_label}",
-                coordinate=coordinate,
+                coordinate=start_coordinate,
                 distance_miles=chunk_distance,
                 description=description,
                 counts_cycle=True,
@@ -221,6 +241,8 @@ class HOSScheduler:
         label: str,
         coordinate: list[float],
         description: str,
+        *,
+        include_stop: bool = True,
     ) -> None:
         start = self.current_time
         self._add_event(
@@ -235,15 +257,17 @@ class HOSScheduler:
             begins_shift=True,
         )
         self.break_driving_minutes = 0
-        self._add_location_stop(
-            stop_id=event_type.value.lower(),
-            stop_type=event_type.value,
-            label=label,
-            coordinate=coordinate,
-            arrival=start,
-            departure=self.current_time,
-            duration_minutes=duration_minutes,
-        )
+        if include_stop:
+            self._add_location_stop(
+                stop_id=event_type.value.lower(),
+                stop_type=event_type.value,
+                label=label,
+                coordinate=coordinate,
+                arrival=start,
+                departure=self.current_time,
+                duration_minutes=duration_minutes,
+                location=label,
+            )
 
     def _add_fuel_stop(self, destination_label: str) -> None:
         coordinate = self._current_coordinate()
@@ -269,6 +293,7 @@ class HOSScheduler:
             arrival=start,
             departure=self.current_time,
             duration_minutes=FUEL_MINUTES,
+            location=f"Along route to {destination_label}",
         )
 
     def _add_rest(
@@ -302,6 +327,7 @@ class HOSScheduler:
             arrival=start,
             departure=self.current_time,
             duration_minutes=duration_minutes,
+            location=location,
         )
 
     def _add_event(
@@ -360,6 +386,7 @@ class HOSScheduler:
         arrival: datetime,
         departure: datetime,
         duration_minutes: int,
+        location: str,
     ) -> None:
         self.stop_counts[stop_type] = self.stop_counts.get(stop_type, 0) + 1
         self.stops.append(
@@ -371,6 +398,7 @@ class HOSScheduler:
                 "arrival_time": format_datetime(arrival),
                 "departure_time": format_datetime(departure),
                 "duration_minutes": duration_minutes,
+                "location": location,
             }
         )
 

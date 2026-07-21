@@ -322,6 +322,12 @@ function createPopupContent(marker: MarkerData): HTMLElement {
   content.append(type)
 
   if (marker.stop) {
+    if (marker.stop.location !== marker.label) {
+      const location = document.createElement('span')
+      location.textContent = marker.stop.location
+      content.append(location)
+    }
+
     const time = document.createElement('span')
     time.textContent = `Arrive ${formatEventTime(marker.stop.arrival_time)}`
     content.append(time)

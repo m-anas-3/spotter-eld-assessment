@@ -7,12 +7,13 @@ daily ELD duty-status logs.
 
 ## Features
 
-- OpenRouteService geocoding, heavy-vehicle routing, and turn-by-turn directions
+- OpenRouteService forward/reverse geocoding, heavy-vehicle routing, and directions
 - MapLibre street map with route, location, fuel, break, rest, and restart markers
 - Property-carrying HOS schedule for the 70-hour/8-day cycle
 - 11-hour driving limit, 14-hour window, 30-minute break, and 10-hour daily rest
 - Fuel stops at least every 1,000 miles and one-hour pickup/drop-off activities
-- Multi-day SVG ELD sheets with midnight splitting and exact 24-hour totals
+- Thirty-minute pre-trip and post-trip inspections logged as on-duty work
+- Multi-day projected ELD sheets with daily miles and exact 24-hour totals
 - Responsive Material UI dashboard with validation and clear API errors
 
 ## Architecture
@@ -69,9 +70,10 @@ Content-Type: application/json
 }
 ```
 
-The response includes summary metrics, locations, GeoJSON route geometry,
-route legs and directions, stops, a chronological duty timeline, and daily ELD
-logs.
+The response includes summary metrics, locations, one simplified GeoJSON route
+geometry, route-leg metadata and directions, stops, a chronological duty
+timeline, and daily ELD logs. Django gzip-compresses the JSON for clients that
+support it.
 
 ## Verification
 
@@ -105,6 +107,7 @@ directory `dist`. Set `VITE_API_BASE_URL` to the hosted Django URL and
 - Property-carrying driver on the 70-hour/8-day cycle
 - No adverse-driving-condition exception
 - Driver starts after a qualifying 10-hour rest
+- Pre-trip and post-trip inspections take 30 minutes each
 - Pickup and drop-off take one hour each
 - Fueling takes 30 minutes and is required at least every 1,000 miles
 - A 34-hour restart is scheduled when more driving is required at the cycle limit
@@ -113,6 +116,8 @@ directory `dist`. Set `VITE_API_BASE_URL` to the hosted Django URL and
 ## Known limitations
 
 - ELD calendar-day boundaries use UTC because driver/terminal timezone is not an input.
+- Sheets are planning projections, not engine-synchronized or driver-certified ELD records.
+- Driver, carrier, vehicle, and shipment details are marked as not provided because they are not inputs.
 - The 70-hour cycle is based on the supplied current total, not eight days of prior logs.
 - Route and geocoding availability depend on OpenRouteService quotas and uptime.
 

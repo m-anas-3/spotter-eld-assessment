@@ -8,6 +8,7 @@ export type DutyStatus =
 
 export type TripEventType =
   | 'INITIAL_REST'
+  | 'PRE_TRIP_INSPECTION'
   | 'DRIVING'
   | 'PICKUP'
   | 'DROPOFF'
@@ -15,6 +16,7 @@ export type TripEventType =
   | 'REQUIRED_BREAK'
   | 'DAILY_REST'
   | 'CYCLE_RESTART'
+  | 'POST_TRIP_INSPECTION'
 
 export interface TripRequest {
   current_location: string
@@ -57,7 +59,6 @@ export interface RouteLeg {
   end_label: string
   distance_miles: number
   duration_minutes: number
-  geometry: Coordinate[]
   instructions: RouteInstruction[]
 }
 
@@ -74,6 +75,7 @@ export interface Stop {
   arrival_time: string
   departure_time: string
   duration_minutes: number
+  location: string
 }
 
 export interface TimelineEvent {
@@ -103,6 +105,7 @@ export interface DailyEldEvent {
   location: string | null
   description: string | null
   coordinate: Coordinate | null
+  distance_miles: number | null
 }
 
 export interface EldStatusTotals {
@@ -116,12 +119,33 @@ export interface EldStatusTotals {
   on_duty_not_driving_hours: number
   total_minutes: number
   total_hours: number
+  total_on_duty_minutes: number
+  total_on_duty_hours: number
+}
+
+export interface EldLogMetadata {
+  record_type: 'PROJECTED'
+  time_zone: string
+  period_start: string
+  driver_name: string | null
+  driver_id: string | null
+  co_driver_name: string | null
+  carrier_name: string | null
+  main_office_address: string | null
+  tractor_number: string | null
+  trailer_number: string | null
+  shipping_document_number: string | null
+  shipper_name: string | null
+  commodity: string | null
+  certification_status: 'NOT_CERTIFIED'
 }
 
 export interface DailyEldLog {
   date: string
   events: DailyEldEvent[]
   status_totals: EldStatusTotals
+  total_driving_miles: number
+  log_metadata: EldLogMetadata
 }
 
 export interface TripResponse {

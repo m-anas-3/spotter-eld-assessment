@@ -5,7 +5,7 @@ interface ResultsTabsProps {
   onChange: (value: number) => void
 }
 
-const labels = ['Route', 'Timeline', 'ELD logs']
+const labels = ['Route', 'Duty schedule', 'ELD logs']
 
 export function ResultsTabs({ value, onChange }: ResultsTabsProps) {
   return (

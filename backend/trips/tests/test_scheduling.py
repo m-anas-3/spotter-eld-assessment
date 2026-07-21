@@ -56,6 +56,35 @@ def event_types(result) -> list[str]:
 
 
 class HOSSchedulerTests(SimpleTestCase):
+    def test_trip_includes_documented_vehicle_inspections(self) -> None:
+        result = schedule_route(make_route())
+
+        self.assertEqual(
+            result.timeline[0]["type"],
+            EventType.PRE_TRIP_INSPECTION.value,
+        )
+        self.assertEqual(
+            result.timeline[-1]["type"],
+            EventType.POST_TRIP_INSPECTION.value,
+        )
+        inspections = [
+            event
+            for event in result.timeline
+            if event["type"]
+            in {
+                EventType.PRE_TRIP_INSPECTION.value,
+                EventType.POST_TRIP_INSPECTION.value,
+            }
+        ]
+        self.assertTrue(
+            all(
+                event["duration_minutes"] == 30
+                and event["status"]
+                == DutyStatus.ON_DUTY_NOT_DRIVING.value
+                for event in inspections
+            )
+        )
+
     def test_short_trip_creates_driving_pickup_and_dropoff(self) -> None:
         result = schedule_route(make_route())
 

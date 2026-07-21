@@ -67,6 +67,17 @@ class TripApiTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_calculate_response_supports_gzip_compression(self) -> None:
+        response = self.client.post(
+            self.calculate_url,
+            self.valid_payload,
+            format="json",
+            HTTP_ACCEPT_ENCODING="gzip",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.headers.get("Content-Encoding"), "gzip")
+
     def test_empty_current_location_is_rejected(self) -> None:
         payload = {**self.valid_payload, "current_location": "   "}
 

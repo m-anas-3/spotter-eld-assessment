@@ -95,11 +95,26 @@ class TripCalculatorTests(SimpleTestCase):
         )
         self.assertEqual(result["route"]["type"], "LineString")
         self.assertEqual(len(result["route_legs"]), 2)
+        self.assertNotIn("geometry", result["route_legs"][0])
         self.assertEqual(
             result["route_legs"][0]["instructions"][0]["instruction"],
             "Continue toward pickup",
         )
         self.assertTrue(result["daily_logs"])
+        self.assertEqual(
+            sum(log["total_driving_miles"] for log in result["daily_logs"]),
+            300,
+        )
+        self.assertTrue(
+            all(
+                log["log_metadata"]["record_type"] == "PROJECTED"
+                for log in result["daily_logs"]
+            )
+        )
+        self.assertEqual(result["timeline"][0]["location"], "Current")
+        self.assertTrue(
+            all("location" in stop for stop in result["stops"])
+        )
         self.assertTrue(
             all(
                 log["status_totals"]["total_minutes"] == 1_440

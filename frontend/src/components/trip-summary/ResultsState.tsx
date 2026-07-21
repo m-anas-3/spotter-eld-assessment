@@ -17,7 +17,7 @@ export function EmptyResults() {
             Enter the trip details to calculate the route and driver logs.
           </Typography>
           <Typography color="text.secondary" sx={{ mt: 1 }}>
-            Route, required stops, duty timeline, and daily ELD sheets will appear here.
+            The route, duty schedule, and daily logs will appear here.
           </Typography>
         </Box>
       </CardContent>

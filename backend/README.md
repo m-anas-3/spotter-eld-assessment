@@ -72,13 +72,15 @@ Never commit `.env` or an actual OpenRouteService key.
 
 Create an API key in the HeiGIT/OpenRouteService account dashboard and assign
 it to `OPENROUTESERVICE_API_KEY`. OpenStreetMap supplies the underlying
-geographic map data. OpenRouteService performs address geocoding and
-`driving-hgv` route calculation over that data through the current
+geographic map data. OpenRouteService performs address and stop reverse
+geocoding plus `driving-hgv` route calculation over that data through the current
 `api.heigit.org` endpoints.
 
-The backend requests current-to-pickup and pickup-to-drop-off legs and combines
-them in order. All coordinates use GeoJSON/MapLibre order:
-`[longitude, latitude]`.
+The backend requests simplified current-to-pickup and pickup-to-drop-off
+geometries and combines them in order. The full route geometry appears only
+once at `route.coordinates`; it is not duplicated in each route leg. Dynamic
+JSON responses support gzip compression. All coordinates use GeoJSON/MapLibre
+order: `[longitude, latitude]`.
 
 ## API request
 
@@ -112,12 +114,14 @@ The response has this structure:
 }
 ```
 
-Each `route_legs` entry contains distance, duration, geometry, and
-turn-by-turn `instructions` from OpenRouteService.
+Each `route_legs` entry contains labels, distance, duration, and turn-by-turn
+`instructions` from OpenRouteService. MapLibre should render the single
+top-level `route` GeoJSON geometry.
 
 `timeline` contains timezone-aware ISO-8601 timestamps. Each `daily_logs`
 entry represents one UTC calendar date and contains ordered SVG-ready events
-covering minutes `0` through `1440`, plus exact status totals.
+covering minutes `0` through `1440`, daily driving miles, projected-record
+metadata, and exact status totals.
 
 ## HOS rules and assessment assumptions
 
@@ -130,6 +134,7 @@ The scheduler implements:
 - A 10-hour sleeper-berth reset when daily driving or window limits bind.
 - A simplified 34-hour off-duty restart when the cycle limit binds.
 - 60-minute pickup and drop-off activities.
+- 30-minute pre-trip and post-trip inspections as on-duty-not-driving work.
 - 30-minute fueling at least every 1,000 route miles.
 
 The driver is assumed to begin after a valid 10-hour rest and with enough fuel
@@ -140,10 +145,17 @@ because only the current cycle-used total is provided, not eight days of logs.
 ## ELD daily logs
 
 Events crossing UTC midnight are split without changing their status, type,
-description, location, or coordinate. The first day is filled with off-duty
+description, location, coordinate, or proportional driving distance. The first day is filled with off-duty
 time before trip start and the final day after completion. Intermediate gaps,
 overlaps, invalid timestamps, and daily totals other than exactly 1,440 minutes
 raise sanitized internal service errors.
+
+Each sheet is explicitly marked as a projected, uncertified planning record.
+Unknown driver, co-driver, carrier, vehicle, and shipment fields remain null in
+the API and render as `Not provided` or `N/A`; the service never fabricates
+identity or certification data. Intermediate operational stops are
+reverse-geocoded to concise locality labels on a best-effort basis. A reverse
+geocoding failure does not invalidate an otherwise valid route.
 
 The official rows are:
 
@@ -199,6 +211,9 @@ Run `python manage.py migrate` as a release command on the deployment host.
 
 - Route durations are rounded to integer minutes for deterministic HOS math.
 - Fuel and rest coordinates are approximate polyline interpolations.
+- Log calendar boundaries use UTC because home-terminal timezone is not provided.
+- Generated sheets are planning projections, not certified ELD records.
+- Driver, carrier, power-unit, trailer, and shipment metadata are not trip inputs.
 - The cycle calculation cannot reconstruct rolling eight-day history.
 - The scheduler does not implement split-sleeper, adverse-driving, short-haul,
   team-driver, or state-specific exceptions.

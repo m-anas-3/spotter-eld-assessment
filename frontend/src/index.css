@@ -119,6 +119,10 @@ input {
     padding: 0 12px 6px !important;
   }
 
+  .eld-log-metadata > * {
+    padding: 4px 8px !important;
+  }
+
   .eld-document-details .MuiDivider-root {
     margin: 8px 0 !important;
   }

@@ -19,6 +19,7 @@ from trips.services.routing import (
 
 METERS_TO_MILES = 0.000621371192
 GEOCODE_URL = "https://api.heigit.org/pelias/v1/search"
+REVERSE_GEOCODE_URL = "https://api.heigit.org/pelias/v1/reverse"
 DIRECTIONS_URL = (
     "https://api.heigit.org/openrouteservice/v2/"
     "directions/driving-hgv/geojson"
@@ -62,8 +63,8 @@ class OpenRouteServiceProvider(RoutingProvider):
         response = self._request(
             "GET",
             GEOCODE_URL,
+            headers={"Authorization": self.api_key},
             params={
-                "api_key": self.api_key,
                 "text": address,
                 "size": 1,
             },
@@ -111,6 +112,40 @@ class OpenRouteServiceProvider(RoutingProvider):
             geometry=geometry,
         )
 
+    def reverse_geocode(self, coordinate: Coordinate) -> str | None:
+        longitude, latitude = self._validate_coordinate(coordinate)
+        response = self._request(
+            "GET",
+            REVERSE_GEOCODE_URL,
+            headers={"Authorization": self.api_key},
+            params={
+                "point.lon": longitude,
+                "point.lat": latitude,
+                "size": 1,
+            },
+        )
+        payload = self._json_object(response)
+        try:
+            features = payload["features"]
+            if not isinstance(features, list) or not features:
+                return None
+            properties = features[0]["properties"]
+            if not isinstance(properties, dict):
+                return None
+        except (KeyError, TypeError, IndexError):
+            return None
+
+        locality = self._first_text(
+            properties,
+            "locality",
+            "localadmin",
+            "county",
+        )
+        region = self._first_text(properties, "region_a", "region")
+        if locality and region:
+            return f"{locality}, {region}"
+        return self._first_text(properties, "label", "name")
+
     def _get_leg(
         self,
         start: Coordinate,
@@ -125,7 +160,10 @@ class OpenRouteServiceProvider(RoutingProvider):
                 "Authorization": self.api_key,
                 "Content-Type": "application/json",
             },
-            json={"coordinates": [list(start), list(end)]},
+            json={
+                "coordinates": [list(start), list(end)],
+                "geometry_simplify": True,
+            },
         )
         payload = self._json_object(response)
         try:
@@ -282,6 +320,14 @@ class OpenRouteServiceProvider(RoutingProvider):
         ):
             raise RoutingProviderError()
         return longitude, latitude
+
+    @staticmethod
+    def _first_text(properties: dict[str, Any], *keys: str) -> str | None:
+        for key in keys:
+            value = properties.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return None
 
     @staticmethod
     def _combine_geometry(legs: list[RouteLeg]) -> list[list[float]]:

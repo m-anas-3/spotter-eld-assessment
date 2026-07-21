@@ -9,7 +9,7 @@ import {
   MINUTES_PER_DAY,
   readableDutyStatus,
 } from '../../utils/eld'
-import { formatLogDate } from '../../utils/formatters'
+import { formatLogDate, formatMiles } from '../../utils/formatters'
 
 const SVG_WIDTH = 1240
 const SVG_HEIGHT = 286
@@ -31,6 +31,22 @@ export function EldLogSheet({ log, idPrefix = 'eld' }: EldLogSheetProps) {
   const hasValidTotal = isExactDailyTotal(log.status_totals.total_minutes)
   const titleId = `${idPrefix}-eld-title-${log.date}`
   const descriptionId = `${idPrefix}-eld-description-${log.date}`
+  const suppliedMetadata = [
+    { label: 'Driver', value: joinMetadata(log.log_metadata.driver_name, log.log_metadata.driver_id) },
+    {
+      label: 'Carrier / main office',
+      value: joinMetadata(log.log_metadata.carrier_name, log.log_metadata.main_office_address),
+    },
+    {
+      label: 'Power unit / trailer',
+      value: joinMetadata(log.log_metadata.tractor_number, log.log_metadata.trailer_number),
+    },
+    { label: 'Shipping document', value: log.log_metadata.shipping_document_number },
+    {
+      label: 'Shipper / commodity',
+      value: joinMetadata(log.log_metadata.shipper_name, log.log_metadata.commodity),
+    },
+  ].filter((item): item is { label: string; value: string } => item.value !== null)
 
   return (
     <Paper
@@ -58,17 +74,48 @@ export function EldLogSheet({ log, idPrefix = 'eld' }: EldLogSheetProps) {
             {formatLogDate(log.date)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Driver’s daily record of duty status
+            Projected record · not driver-certified
           </Typography>
         </Box>
-        <Typography
-          variant="body2"
-          color={hasValidTotal ? 'text.primary' : 'warning.main'}
-          sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
-        >
-          {hasValidTotal ? '24 total hours' : `${log.status_totals.total_hours} total hours`}
-        </Typography>
+        <Box sx={{ textAlign: { sm: 'right' } }}>
+          <Typography
+            variant="body2"
+            color={hasValidTotal ? 'text.primary' : 'warning.main'}
+            sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
+          >
+            {hasValidTotal ? '24 total hours' : `${log.status_totals.total_hours} total hours`}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+            {log.log_metadata.period_start}–24:00 {log.log_metadata.time_zone}
+          </Typography>
+        </Box>
       </Stack>
+
+      <Box
+        className="eld-log-metadata"
+        component="dl"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
+          m: 0,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'action.hover',
+        }}
+      >
+        <MetadataItem label="Daily distance" value={`${formatMiles(log.total_driving_miles)} mi`} />
+        <MetadataItem label="Co-driver" value={log.log_metadata.co_driver_name ?? 'N/A'} />
+        {suppliedMetadata.map((item) => (
+          <MetadataItem key={item.label} label={item.label} value={item.value} />
+        ))}
+        {suppliedMetadata.length === 0 && (
+          <MetadataItem
+            label="Trip record"
+            value="Driver, carrier, vehicle, and shipment details were not supplied"
+            wide
+          />
+        )}
+      </Box>
 
       {!hasValidTotal && (
         <Alert severity="warning" sx={{ m: 2 }}>
@@ -260,7 +307,7 @@ export function EldLogSheet({ log, idPrefix = 'eld' }: EldLogSheetProps) {
           className="eld-totals"
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(5, minmax(0, 1fr))' },
+            gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(6, minmax(0, 1fr))' },
             borderTop: '1px solid',
             borderLeft: '1px solid',
             borderColor: 'divider',
@@ -273,6 +320,11 @@ export function EldLogSheet({ log, idPrefix = 'eld' }: EldLogSheetProps) {
               value={formatTotal(log.status_totals[row.totalKey])}
             />
           ))}
+          <TotalCell
+            label="On-duty total"
+            value={formatTotal(log.status_totals.total_on_duty_hours)}
+            emphasized
+          />
           <TotalCell label="Total" value={formatTotal(log.status_totals.total_hours)} emphasized />
         </Box>
 
@@ -325,6 +377,34 @@ interface TotalCellProps {
   emphasized?: boolean
 }
 
+interface MetadataItemProps {
+  label: string
+  value: string
+  wide?: boolean
+}
+
+function MetadataItem({ label, value, wide = false }: MetadataItemProps) {
+  return (
+    <Box
+      sx={{
+        minWidth: 0,
+        px: 1.5,
+        py: 1,
+        borderRight: '1px solid',
+        borderColor: 'divider',
+        gridColumn: wide ? { xs: '1 / -1', md: 'span 2' } : 'auto',
+      }}
+    >
+      <Typography component="dt" variant="caption" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography component="dd" variant="body2" sx={{ m: 0, mt: 0.15, fontWeight: 500, overflowWrap: 'anywhere' }}>
+        {value}
+      </Typography>
+    </Box>
+  )
+}
+
 function TotalCell({ label, value, emphasized = false }: TotalCellProps) {
   return (
     <Box sx={{ p: 1, borderRight: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -355,6 +435,11 @@ function hourLabel(hour: number): string {
 
 function formatTotal(hours: number): string {
   return `${Number.isInteger(hours) ? hours : hours.toFixed(2)} hr`
+}
+
+function joinMetadata(...values: Array<string | null>): string | null {
+  const available = values.filter((value): value is string => Boolean(value))
+  return available.length ? available.join(' · ') : null
 }
 
 function readableEventType(event: DailyEldEvent): string {

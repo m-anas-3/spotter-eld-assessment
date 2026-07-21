@@ -3,7 +3,6 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Alert,
   Box,
   Divider,
   Stack,
@@ -18,6 +17,10 @@ interface RouteDirectionsProps {
 
 export function RouteDirections({ legs }: RouteDirectionsProps) {
   const instructionCount = legs.reduce((total, leg) => total + leg.instructions.length, 0)
+
+  if (instructionCount === 0) {
+    return null
+  }
 
   return (
     <Accordion
@@ -36,17 +39,12 @@ export function RouteDirections({ legs }: RouteDirectionsProps) {
           <Typography component="h3" variant="h3">
             Driving directions
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-            {instructionCount} turn-by-turn {instructionCount === 1 ? 'step' : 'steps'}
-          </Typography>
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ pt: 0 }}>
-        {instructionCount === 0 ? (
-          <Alert severity="info">Turn-by-turn instructions were not returned for this route.</Alert>
-        ) : (
-          <Stack spacing={3}>
-            {legs.map((leg, legIndex) => (
+        <Stack spacing={3}>
+          {legs.map((leg, legIndex) => (
+            leg.instructions.length > 0 && (
               <Box key={`${leg.start_label}-${leg.end_label}`}>
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}
@@ -92,9 +90,9 @@ export function RouteDirections({ legs }: RouteDirectionsProps) {
                   ))}
                 </Box>
               </Box>
-            ))}
-          </Stack>
-        )}
+            )
+          ))}
+        </Stack>
       </AccordionDetails>
     </Accordion>
   )

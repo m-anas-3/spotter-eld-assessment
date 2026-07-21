@@ -1,20 +1,25 @@
 """Orchestrate routing, HOS scheduling, ELD logs, and response assembly."""
 
 from datetime import datetime
+import logging
 from typing import Any
 
 from django.utils import timezone
 
+from trips.exceptions import ServiceError
 from trips.services.eld import generate_daily_logs
 from trips.services.geometry import as_coordinate
 from trips.services.openrouteservice import OpenRouteServiceProvider
 from trips.services.routing import Coordinate, RouteResult, RoutingProvider
 from trips.services.scheduling import HOSScheduler
 
+logger = logging.getLogger(__name__)
 
 ASSUMPTIONS = [
     "Property-carrying driver using the 70-hour/8-day cycle.",
+    "No adverse-driving-condition exception is applied.",
     "The driver starts after completing ten consecutive hours off duty.",
+    "Pre-trip and post-trip vehicle inspections each take 30 minutes.",
     "Pickup and drop-off each take one hour.",
     "Fueling takes 30 minutes.",
     "Fueling is required at least once every 1,000 miles.",
@@ -25,6 +30,10 @@ ASSUMPTIONS = [
     (
         "The cycle-restart calculation is simplified because the previous "
         "eight days of driver logs are not provided."
+    ),
+    (
+        "Daily log sheets are projected planning records, use UTC calendar "
+        "days, and are not driver-certified ELD records."
     ),
 ]
 
@@ -56,6 +65,8 @@ def calculate_trip(
     owns_provider = provider is None
     routing_provider = provider or OpenRouteServiceProvider()
     labels = [current_location, pickup_location, dropoff_location]
+    effective_start = resolve_start_time(start_time)
+    initial_cycle_minutes = round(current_cycle_used_hours * 60)
 
     try:
         coordinates = [
@@ -63,20 +74,24 @@ def calculate_trip(
             for label in labels
         ]
         route = routing_provider.get_route(coordinates, labels)
+        schedule = HOSScheduler(
+            route,
+            start_time=effective_start,
+            initial_cycle_used_minutes=initial_cycle_minutes,
+        ).schedule()
+        _enrich_schedule_locations(
+            routing_provider,
+            schedule.timeline,
+            schedule.stops,
+            labels,
+            coordinates,
+        )
     finally:
         if owns_provider and isinstance(
             routing_provider,
             OpenRouteServiceProvider,
         ):
             routing_provider.close()
-
-    effective_start = resolve_start_time(start_time)
-    initial_cycle_minutes = round(current_cycle_used_hours * 60)
-    schedule = HOSScheduler(
-        route,
-        start_time=effective_start,
-        initial_cycle_used_minutes=initial_cycle_minutes,
-    ).schedule()
 
     total_trip_minutes = int(
         (
@@ -142,7 +157,6 @@ def _route_legs_response(route: RouteResult) -> list[dict[str, Any]]:
             "end_label": leg.end_label,
             "distance_miles": round(leg.distance_miles, 2),
             "duration_minutes": leg.duration_minutes,
-            "geometry": leg.geometry,
             "instructions": [
                 {
                     "instruction": instruction.instruction,
@@ -159,3 +173,54 @@ def _route_legs_response(route: RouteResult) -> list[dict[str, Any]]:
 
 def _parse_last_end(timeline: list[dict[str, Any]]) -> datetime:
     return datetime.fromisoformat(timeline[-1]["end_time"].replace("Z", "+00:00"))
+
+
+def _enrich_schedule_locations(
+    provider: RoutingProvider,
+    timeline: list[dict[str, Any]],
+    stops: list[dict[str, Any]],
+    route_labels: list[str],
+    route_coordinates: list[Coordinate],
+) -> None:
+    """Attach concise locality labels without making them a routing dependency."""
+    labels_by_coordinate = {
+        _coordinate_key(coordinate): label
+        for label, coordinate in zip(route_labels, route_coordinates)
+    }
+
+    for stop in stops:
+        coordinate = stop.get("coordinate")
+        key = _coordinate_key_or_none(coordinate)
+        if key is None:
+            continue
+        label = labels_by_coordinate.get(key)
+        if label is None:
+            try:
+                label = provider.reverse_geocode(key)
+            except ServiceError:  # Optional enrichment must not invalidate a route.
+                logger.warning(
+                    "Unable to reverse geocode an intermediate trip stop.",
+                )
+                label = None
+            if label:
+                labels_by_coordinate[key] = label
+        if label:
+            stop["location"] = label
+
+    for event in timeline:
+        key = _coordinate_key_or_none(event.get("coordinate"))
+        if key is not None and key in labels_by_coordinate:
+            event["location"] = labels_by_coordinate[key]
+
+
+def _coordinate_key(coordinate: Coordinate) -> Coordinate:
+    return round(float(coordinate[0]), 6), round(float(coordinate[1]), 6)
+
+
+def _coordinate_key_or_none(value: object) -> Coordinate | None:
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        return None
+    try:
+        return _coordinate_key((float(value[0]), float(value[1])))
+    except (TypeError, ValueError):
+        return None

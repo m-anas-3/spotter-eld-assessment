@@ -55,11 +55,17 @@ without recalculating routes, HOS constraints, stops, or ELD totals.
 ## Maps and ELD logs
 
 - Route geometry is read as GeoJSON `LineString`.
+- The complete geometry is intentionally kept only in `route.coordinates`;
+  route legs contain metadata and directions without duplicating the polyline.
 - Turn-by-turn directions are grouped by route leg.
 - All map coordinates remain in `[longitude, latitude]` order.
 - Full timestamps are formatted with Day.js.
 - Each ELD day uses backend-provided `start_minute` and `end_minute` values on
   an SVG 24-hour graph.
+- Projected sheets display daily driving miles, UTC period information, combined
+  on-duty totals, supplied administrative metadata, and one concise notice when
+  driver, carrier, vehicle, or shipment details are unavailable.
+- Sheets are clearly identified as planning estimates rather than certified ELD records.
 - Multi-day trips use scrollable date tabs.
 
 ## Commands

@@ -15,6 +15,7 @@ def make_event(
     *,
     location: str | None = "Test location",
     description: str | None = "Test event",
+    distance_miles: float | None = None,
 ) -> dict[str, object]:
     return {
         "type": event_type,
@@ -25,7 +26,7 @@ def make_event(
         "duration_hours": round((end - start).total_seconds() / 3_600, 2),
         "location": location,
         "coordinate": [-90.0, 40.0],
-        "distance_miles": None,
+        "distance_miles": distance_miles,
         "description": description,
     }
 
@@ -41,6 +42,41 @@ def generate_for_single_event(
 
 
 class DailyEldLogTests(SimpleTestCase):
+    def test_daily_log_contains_projected_record_metadata(self) -> None:
+        start = datetime(2026, 7, 21, 8, tzinfo=UTC)
+        logs = generate_for_single_event(
+            EventType.DRIVING.value,
+            DutyStatus.DRIVING.value,
+            start,
+            start + timedelta(hours=1),
+        )
+
+        metadata = logs[0]["log_metadata"]
+        self.assertEqual(metadata["record_type"], "PROJECTED")
+        self.assertEqual(metadata["time_zone"], "UTC")
+        self.assertEqual(metadata["period_start"], "00:00")
+        self.assertIsNone(metadata["driver_name"])
+        self.assertIsNone(metadata["co_driver_name"])
+        self.assertEqual(metadata["certification_status"], "NOT_CERTIFIED")
+
+    def test_driving_distance_is_split_across_midnight(self) -> None:
+        start = datetime(2026, 7, 21, 22, tzinfo=UTC)
+        end = datetime(2026, 7, 22, 2, tzinfo=UTC)
+        event = make_event(
+            EventType.DRIVING.value,
+            DutyStatus.DRIVING.value,
+            start,
+            end,
+            distance_miles=200,
+        )
+
+        logs = generate_daily_logs([event], start, end)
+
+        self.assertEqual(
+            [log["total_driving_miles"] for log in logs],
+            [100.0, 100.0],
+        )
+
     def test_event_within_one_day_is_not_split(self) -> None:
         start = datetime(2026, 7, 21, 8, tzinfo=UTC)
         end = start + timedelta(hours=4)
@@ -202,6 +238,19 @@ class DailyEldLogTests(SimpleTestCase):
                     if event["status"] == status
                 )
                 self.assertEqual(log["status_totals"][key], event_total)
+
+    def test_combined_on_duty_total_includes_driving_and_work(self) -> None:
+        for log in self._mapped_status_logs():
+            totals = log["status_totals"]
+            expected = (
+                totals["driving_minutes"]
+                + totals["on_duty_not_driving_minutes"]
+            )
+            self.assertEqual(totals["total_on_duty_minutes"], expected)
+            self.assertEqual(
+                totals["total_on_duty_hours"],
+                round(expected / 60, 2),
+            )
 
     def test_daily_events_are_ordered_by_start_minute(self) -> None:
         for log in self._multiday_logs():

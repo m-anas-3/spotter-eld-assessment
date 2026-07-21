@@ -22,18 +22,19 @@ export function TripActivityTimeline({ events }: TripActivityTimelineProps) {
     <Card>
       <CardContent sx={{ p: { xs: 2, md: 2.5 }, '&:last-child': { pb: { xs: 2, md: 2.5 } } }}>
         <Typography component="h3" variant="h3">
-          Duty timeline
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.5 }}>
-          {orderedEvents.length} scheduled {orderedEvents.length === 1 ? 'activity' : 'activities'}
+          Duty schedule
         </Typography>
 
         {orderedEvents.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-            No timeline events were returned.
+          <Typography variant="body2" color="text.secondary" sx={{ pt: 1.5 }}>
+            No duty events were returned for this trip.
           </Typography>
         ) : (
-          <Box component="ol" aria-label="Chronological trip activities" sx={{ listStyle: 'none', p: 0, m: 0 }}>
+          <Box
+            component="ol"
+            aria-label="Chronological trip activities"
+            sx={{ listStyle: 'none', p: 0, mt: 1, mb: 0 }}
+          >
             {orderedEvents.map((event, index) => {
               const start = dayjs(event.start_time)
               const end = dayjs(event.end_time)

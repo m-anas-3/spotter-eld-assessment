@@ -15,6 +15,7 @@ const DUTY_STATUSES = new Set([
 ])
 const TIMELINE_EVENT_TYPES = new Set([
   'INITIAL_REST',
+  'PRE_TRIP_INSPECTION',
   'DRIVING',
   'PICKUP',
   'DROPOFF',
@@ -22,6 +23,7 @@ const TIMELINE_EVENT_TYPES = new Set([
   'REQUIRED_BREAK',
   'DAILY_REST',
   'CYCLE_RESTART',
+  'POST_TRIP_INSPECTION',
 ])
 
 type JsonRecord = Record<string, unknown>
@@ -228,8 +230,6 @@ function isRouteLeg(value: unknown): boolean {
     typeof value.end_label === 'string' &&
     typeof value.distance_miles === 'number' &&
     typeof value.duration_minutes === 'number' &&
-    Array.isArray(value.geometry) &&
-    value.geometry.every(isCoordinate) &&
     Array.isArray(value.instructions) &&
     value.instructions.every(isRouteInstruction)
   )
@@ -262,7 +262,8 @@ function isStop(value: unknown): boolean {
     (value.coordinate === null || isCoordinate(value.coordinate)) &&
     typeof value.arrival_time === 'string' &&
     typeof value.departure_time === 'string' &&
-    typeof value.duration_minutes === 'number'
+    typeof value.duration_minutes === 'number' &&
+    typeof value.location === 'string'
   )
 }
 
@@ -288,7 +289,9 @@ function isDailyLog(value: unknown): boolean {
     typeof value.date !== 'string' ||
     !Array.isArray(value.events) ||
     !value.events.every(isDailyEvent) ||
-    !isRecord(value.status_totals)
+    !isRecord(value.status_totals) ||
+    typeof value.total_driving_miles !== 'number' ||
+    !isEldLogMetadata(value.log_metadata)
   ) {
     return false
   }
@@ -305,7 +308,36 @@ function isDailyLog(value: unknown): boolean {
     'on_duty_not_driving_hours',
     'total_minutes',
     'total_hours',
+    'total_on_duty_minutes',
+    'total_on_duty_hours',
   ].every((field) => typeof totals[field] === 'number')
+}
+
+function isEldLogMetadata(value: unknown): boolean {
+  if (!isRecord(value)) return false
+
+  const nullableTextFields = [
+    'driver_name',
+    'driver_id',
+    'co_driver_name',
+    'carrier_name',
+    'main_office_address',
+    'tractor_number',
+    'trailer_number',
+    'shipping_document_number',
+    'shipper_name',
+    'commodity',
+  ]
+
+  return (
+    value.record_type === 'PROJECTED' &&
+    typeof value.time_zone === 'string' &&
+    typeof value.period_start === 'string' &&
+    value.certification_status === 'NOT_CERTIFIED' &&
+    nullableTextFields.every(
+      (field) => value[field] === null || typeof value[field] === 'string',
+    )
+  )
 }
 
 function isDailyEvent(value: unknown): boolean {
@@ -322,7 +354,8 @@ function isDailyEvent(value: unknown): boolean {
     typeof value.duration_minutes === 'number' &&
     typeof value.duration_hours === 'number' &&
     (value.location === null || typeof value.location === 'string') &&
-    (value.description === null || typeof value.description === 'string')
+    (value.description === null || typeof value.description === 'string') &&
+    (value.distance_miles === null || typeof value.distance_miles === 'number')
   )
 }
 

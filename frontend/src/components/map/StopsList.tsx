@@ -51,6 +51,11 @@ export function StopsList({ stops }: StopsListProps) {
                   <Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
                     {stop.label}
                   </Typography>
+                  {stop.location !== stop.label && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
+                      {stop.location}
+                    </Typography>
+                  )}
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
                     {readableType(stop.type)}
                     {stop.duration_minutes > 0 && ` · ${formatDurationMinutes(stop.duration_minutes)}`}

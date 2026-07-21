@@ -48,3 +48,7 @@ class RoutingProvider(ABC):
         labels: list[str] | None = None,
     ) -> RouteResult:
         """Calculate ordered route legs through every coordinate."""
+
+    def reverse_geocode(self, coordinate: Coordinate) -> str | None:
+        """Return a concise locality label when the provider supports it."""
+        return None
