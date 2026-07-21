@@ -18,20 +18,18 @@ interface TripResultsProps {
 
 export function TripResults({ trip, activeTab, onTabChange, onPrint }: TripResultsProps) {
   return (
-    <Stack spacing={2.5}>
+    <Stack spacing={2}>
       <TripResultsHeader locations={trip.locations} onPrint={onPrint} />
       <TripSummaryCards summary={trip.trip_summary} />
       <ResultsTabs value={activeTab} onChange={onTabChange} />
 
       <ResultPanel value={activeTab} index={0}>
-        <Stack spacing={2.5}>
-          <RouteOverview
-            route={trip.route}
-            locations={trip.locations}
-            stops={trip.stops}
-            legs={trip.route_legs}
-          />
-        </Stack>
+        <RouteOverview
+          route={trip.route}
+          locations={trip.locations}
+          stops={trip.stops}
+          legs={trip.route_legs}
+        />
       </ResultPanel>
       <ResultPanel value={activeTab} index={1}>
         <TripActivityTimeline events={trip.timeline} />

@@ -1,30 +1,12 @@
-import { useMemo, type ReactNode } from 'react'
-import CoffeeOutlinedIcon from '@mui/icons-material/CoffeeOutlined'
-import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
-import EvStationOutlinedIcon from '@mui/icons-material/EvStationOutlined'
-import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined'
-import HotelOutlinedIcon from '@mui/icons-material/HotelOutlined'
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
-import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded'
-import { Avatar, Box, Card, CardContent, Stack, Typography } from '@mui/material'
+import { useMemo } from 'react'
+import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import type { TimelineEvent, TripEventType } from '../../types/trip'
 import { readableDutyStatus } from '../../utils/eld'
-import { formatDurationMinutes, formatEventRange } from '../../utils/formatters'
+import { formatDurationMinutes } from '../../utils/formatters'
 
 interface TripActivityTimelineProps {
   events: TimelineEvent[]
-}
-
-const eventIcons: Record<TripEventType, ReactNode> = {
-  INITIAL_REST: <HotelOutlinedIcon />,
-  DRIVING: <DirectionsCarOutlinedIcon />,
-  PICKUP: <Inventory2OutlinedIcon />,
-  DROPOFF: <FlagOutlinedIcon />,
-  FUEL: <EvStationOutlinedIcon />,
-  REQUIRED_BREAK: <CoffeeOutlinedIcon />,
-  DAILY_REST: <HotelOutlinedIcon />,
-  CYCLE_RESTART: <RestartAltRoundedIcon />,
 }
 
 export function TripActivityTimeline({ events }: TripActivityTimelineProps) {
@@ -42,8 +24,8 @@ export function TripActivityTimeline({ events }: TripActivityTimelineProps) {
         <Typography component="h3" variant="h3">
           Duty timeline
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 2 }}>
-          Driver activities in chronological order
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.5 }}>
+          {orderedEvents.length} scheduled {orderedEvents.length === 1 ? 'activity' : 'activities'}
         </Typography>
 
         {orderedEvents.length === 0 ? (
@@ -53,51 +35,63 @@ export function TripActivityTimeline({ events }: TripActivityTimelineProps) {
         ) : (
           <Box component="ol" aria-label="Chronological trip activities" sx={{ listStyle: 'none', p: 0, m: 0 }}>
             {orderedEvents.map((event, index) => {
-              const isDriving = event.type === 'DRIVING'
+              const start = dayjs(event.start_time)
+              const end = dayjs(event.end_time)
+              const endLabel = start.isSame(end, 'day')
+                ? end.format('h:mm A')
+                : end.format('MMM D · h:mm A')
 
               return (
                 <Box
                   component="li"
                   key={`${event.type}-${event.start_time}-${index}`}
-                  sx={{ display: 'flex', gap: 1.5, minWidth: 0 }}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: 'minmax(0, 1fr) auto',
+                      md: '150px minmax(0, 1fr) 150px',
+                    },
+                    columnGap: { xs: 1.5, md: 2.5 },
+                    rowGap: 0.75,
+                    py: 1.5,
+                    borderTop: index === 0 ? 0 : '1px solid',
+                    borderColor: 'divider',
+                  }}
                 >
-                  <Stack sx={{ alignItems: 'center', flexShrink: 0 }}>
-                    <Avatar
-                      sx={{
-                        width: 30,
-                        height: 30,
-                        bgcolor: isDriving ? 'primary.light' : 'action.hover',
-                        color: isDriving ? 'primary.main' : 'text.secondary',
-                        border: '1px solid',
-                        borderColor: isDriving ? 'primary.main' : 'divider',
-                        '& svg': { fontSize: 17 },
-                      }}
+                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'auto' }, minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
                     >
-                      {eventIcons[event.type]}
-                    </Avatar>
-                    {index < orderedEvents.length - 1 && (
-                      <Box aria-hidden="true" sx={{ width: 1, minHeight: 40, flex: 1, bgcolor: 'divider' }} />
-                    )}
-                  </Stack>
+                      {start.format('MMM D · h:mm A')}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      to {endLabel}
+                    </Typography>
+                  </Box>
 
-                  <Box sx={{ minWidth: 0, flex: 1, pb: 2.25 }}>
-                    <Stack
-                      direction={{ xs: 'column', sm: 'row' }}
-                      sx={{ justifyContent: 'space-between', alignItems: { sm: 'baseline' }, gap: 0.25 }}
-                    >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                      <Box
+                        aria-hidden="true"
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          flexShrink: 0,
+                          borderRadius: '50%',
+                          bgcolor: event.type === 'DRIVING' ? 'primary.main' : 'text.disabled',
+                        }}
+                      />
                       <Typography component="h4" variant="body2" sx={{ fontWeight: 600 }}>
                         {readableType(event.type)}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {readableDutyStatus(event.status)}
-                      </Typography>
                     </Stack>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
-                      {formatEventRange(event.start_time, event.end_time)} ·{' '}
-                      {formatDurationMinutes(event.duration_minutes)}
-                    </Typography>
                     {event.location && (
-                      <Typography variant="body2" sx={{ mt: 0.65, fontWeight: 500, overflowWrap: 'anywhere' }}>
+                      <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500, overflowWrap: 'anywhere' }}>
                         {event.location}
                       </Typography>
                     )}
@@ -106,6 +100,15 @@ export function TripActivityTimeline({ events }: TripActivityTimelineProps) {
                         {event.description}
                       </Typography>
                     )}
+                  </Box>
+
+                  <Box sx={{ minWidth: 0, textAlign: { md: 'right' } }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                      {formatDurationMinutes(event.duration_minutes)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {readableDutyStatus(event.status)}
+                    </Typography>
                   </Box>
                 </Box>
               )

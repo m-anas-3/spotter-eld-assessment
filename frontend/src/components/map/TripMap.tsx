@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Box, Typography } from '@mui/material'
+import { Alert, Box, Stack } from '@mui/material'
 import maplibregl, {
   type GeoJSONSource,
   type Map,
@@ -59,6 +59,7 @@ export function TripMap({ route, locations, stops }: TripMapProps) {
       style: styleUrl,
       center: [-96, 38],
       zoom: 3,
+      cooperativeGestures: true,
     })
     mapRef.current = map
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
@@ -113,54 +114,43 @@ export function TripMap({ route, locations, stops }: TripMapProps) {
   }, [locations, stops, validRouteCoordinates])
 
   return (
-    <Box sx={{ height: '100%', p: 2 }}>
-      <Typography component="h3" variant="h3">
-        Route map
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.5 }}>
-        Select a marker for stop details.
-      </Typography>
+    <Box sx={{ position: 'relative', height: '100%', minHeight: { xs: 400, sm: 480, lg: 560 } }}>
+      <Box
+        ref={containerRef}
+        role="region"
+        aria-label="Interactive trip route map"
+        sx={{
+          width: '100%',
+          height: { xs: 400, sm: 480, lg: 560 },
+          overflow: 'hidden',
+          bgcolor: 'action.hover',
+        }}
+      />
 
-      {!styleUrl && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Add VITE_MAP_STYLE_URL to the frontend environment to display the map.
-        </Alert>
-      )}
-      {mapError && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          {mapError}
-        </Alert>
+      {(!styleUrl || mapError) && (
+        <Stack spacing={1} sx={{ position: 'absolute', zIndex: 2, top: 12, right: 12, left: 12 }}>
+          {!styleUrl && (
+            <Alert severity="warning">
+              Add VITE_MAP_STYLE_URL to the frontend environment to display the map.
+            </Alert>
+          )}
+          {mapError && <Alert severity="warning">{mapError}</Alert>}
+        </Stack>
       )}
 
-      <Box sx={{ position: 'relative' }}>
-        <Box
-          ref={containerRef}
-          role="region"
-          aria-label="Interactive trip route map"
+      {validRouteCoordinates.length < 2 && (
+        <Alert
+          severity="info"
           sx={{
-            width: '100%',
-            height: { xs: 400, sm: 480, lg: 560 },
-            overflow: 'hidden',
-            borderRadius: 1,
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'action.hover',
+            position: 'absolute',
+            left: 12,
+            right: 12,
+            bottom: 12,
           }}
-        />
-        {validRouteCoordinates.length < 2 && (
-          <Alert
-            severity="info"
-            sx={{
-              position: 'absolute',
-              left: 16,
-              right: 16,
-              bottom: 16,
-            }}
-          >
-            Route geometry is unavailable, but valid location markers can still be displayed.
-          </Alert>
-        )}
-      </Box>
+        >
+          Route geometry is unavailable, but valid location markers can still be displayed.
+        </Alert>
+      )}
     </Box>
   )
 }
@@ -204,8 +194,8 @@ function updateRoute(map: Map, coordinates: Coordinate[]) {
       },
       paint: {
         'line-color': appTokens.colors.routeCasing,
-        'line-width': 8,
-        'line-opacity': 0.92,
+        'line-width': 6,
+        'line-opacity': 0.9,
       },
     })
   }
@@ -221,8 +211,8 @@ function updateRoute(map: Map, coordinates: Coordinate[]) {
       },
       paint: {
         'line-color': appTokens.colors.primary,
-        'line-width': 4.5,
-        'line-opacity': 0.96,
+        'line-width': 3.5,
+        'line-opacity': 0.94,
       },
     })
   }

@@ -1,6 +1,6 @@
 import { Box, Divider, Stack, Typography } from '@mui/material'
 import type { Stop } from '../../types/trip'
-import { formatDurationMinutes, formatEventTime } from '../../utils/formatters'
+import { formatCompactEventRange, formatDurationMinutes } from '../../utils/formatters'
 
 interface StopsListProps {
   stops: Stop[]
@@ -12,8 +12,8 @@ export function StopsList({ stops }: StopsListProps) {
       <Typography component="h3" variant="h3">
         Route stops
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.5 }}>
-        {stops.length} {stops.length === 1 ? 'stop' : 'stops'} in travel order
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1 }}>
+        {stops.length} {stops.length === 1 ? 'stop' : 'stops'} · travel order
       </Typography>
 
       {stops.length === 0 ? (
@@ -28,7 +28,7 @@ export function StopsList({ stops }: StopsListProps) {
         >
           {stops.map((stop, index) => (
             <Box component="li" key={stop.id}>
-              <Stack direction="row" spacing={1.25} sx={{ py: 1.5, alignItems: 'flex-start' }}>
+              <Stack direction="row" spacing={1.25} sx={{ py: 1.25, alignItems: 'flex-start' }}>
                 <Box
                   aria-hidden="true"
                   sx={{
@@ -53,15 +53,15 @@ export function StopsList({ stops }: StopsListProps) {
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
                     {readableType(stop.type)}
+                    {stop.duration_minutes > 0 && ` · ${formatDurationMinutes(stop.duration_minutes)}`}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.65 }}>
-                    {formatEventTime(stop.arrival_time)} – {formatEventTime(stop.departure_time)}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', mt: 0.5, fontVariantNumeric: 'tabular-nums' }}
+                  >
+                    {formatCompactEventRange(stop.arrival_time, stop.departure_time)}
                   </Typography>
-                  {stop.duration_minutes > 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDurationMinutes(stop.duration_minutes)}
-                    </Typography>
-                  )}
                 </Box>
               </Stack>
               {index < stops.length - 1 && <Divider sx={{ ml: 5 }} />}

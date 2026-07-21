@@ -24,7 +24,7 @@ export function RouteDirections({ legs }: RouteDirectionsProps) {
       disableGutters
       elevation={0}
       sx={{
-        mt: 2.5,
+        mt: 2,
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: '8px !important',

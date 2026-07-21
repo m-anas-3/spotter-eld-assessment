@@ -46,7 +46,15 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
             <Typography variant="caption" color="text.secondary">
               {metric.label}
             </Typography>
-            <Typography sx={{ mt: 0.5, fontSize: '1.125rem', fontWeight: 600, lineHeight: 1.3 }}>
+            <Typography
+              sx={{
+                mt: 0.5,
+                fontSize: '1.125rem',
+                fontWeight: 600,
+                lineHeight: 1.3,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
               {metric.value}
             </Typography>
             {metric.detail && (

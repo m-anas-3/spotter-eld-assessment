@@ -63,10 +63,10 @@ export function EldLogSheet({ log, idPrefix = 'eld' }: EldLogSheetProps) {
         </Box>
         <Typography
           variant="body2"
-          color={hasValidTotal ? 'success.main' : 'warning.main'}
-          sx={{ fontWeight: 600 }}
+          color={hasValidTotal ? 'text.primary' : 'warning.main'}
+          sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
         >
-          {hasValidTotal ? '24 hours verified' : `${log.status_totals.total_hours} hours recorded`}
+          {hasValidTotal ? '24 total hours' : `${log.status_totals.total_hours} total hours`}
         </Typography>
       </Stack>
 
@@ -253,7 +253,7 @@ export function EldLogSheet({ log, idPrefix = 'eld' }: EldLogSheetProps) {
       </Box>
 
       <Box className="eld-document-details" sx={{ px: { xs: 2, sm: 2.5 }, pb: 2.5 }}>
-        <Typography component="h5" variant="h3" sx={{ mb: 1.25 }}>
+        <Typography component="h5" variant="body2" sx={{ mb: 0.75, fontWeight: 600 }}>
           Duty-status totals
         </Typography>
         <Box
@@ -276,9 +276,9 @@ export function EldLogSheet({ log, idPrefix = 'eld' }: EldLogSheetProps) {
           <TotalCell label="Total" value={formatTotal(log.status_totals.total_hours)} emphasized />
         </Box>
 
-        <Divider sx={{ my: 2.5 }} />
+        <Divider sx={{ my: 2 }} />
 
-        <Typography component="h5" variant="h3" sx={{ mb: 1 }}>
+        <Typography component="h5" variant="body2" sx={{ mb: 0.75, fontWeight: 600 }}>
           Remarks and activity
         </Typography>
         <Box
@@ -327,7 +327,7 @@ interface TotalCellProps {
 
 function TotalCell({ label, value, emphasized = false }: TotalCellProps) {
   return (
-    <Box sx={{ p: 1.25, borderRight: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ p: 1, borderRight: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
       <Typography variant="caption" color="text.secondary">
         {label}
       </Typography>

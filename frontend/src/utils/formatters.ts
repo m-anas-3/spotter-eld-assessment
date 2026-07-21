@@ -25,6 +25,15 @@ export const formatEventRange = (startTime: string, endTime: string) => {
   )}`
 }
 
+export const formatCompactEventRange = (startTime: string, endTime: string) => {
+  const start = dayjs(startTime)
+  const end = dayjs(endTime)
+  if (start.isSame(end, 'day')) {
+    return `${start.format('MMM D · h:mm A')}–${end.format('h:mm A')}`
+  }
+  return `${start.format('MMM D · h:mm A')}–${end.format('MMM D · h:mm A')}`
+}
+
 export const formatDurationMinutes = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
