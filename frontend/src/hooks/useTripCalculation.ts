@@ -4,4 +4,5 @@ import { calculateTrip } from '../api/client'
 export const useTripCalculation = () =>
   useMutation({
     mutationFn: calculateTrip,
+    networkMode: 'always',
   })
