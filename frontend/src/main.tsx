@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CssBaseline, ThemeProvider } from '@mui/material'
+import { Analytics } from '@vercel/analytics/react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import App from './App'
 import { appTheme } from './theme'
@@ -24,5 +25,6 @@ createRoot(document.getElementById('root')!).render(
         <App />
       </ThemeProvider>
     </QueryClientProvider>
+    <Analytics />
   </StrictMode>,
 )
