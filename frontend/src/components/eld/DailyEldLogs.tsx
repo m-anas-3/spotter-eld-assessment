@@ -49,7 +49,26 @@ export function DailyEldLogs({ logs }: DailyEldLogsProps) {
           scrollButtons="auto"
           allowScrollButtonsMobile
           aria-label="Select a daily ELD log"
-          sx={{ maxWidth: '100%', minWidth: 0, flex: { sm: 1 }, ml: { sm: 2 } }}
+          sx={{
+            maxWidth: '100%',
+            minWidth: 0,
+            flex: { sm: 1 },
+            ml: { sm: 2 },
+            p: 0.5,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            '& .MuiTabs-indicator': { display: 'none' },
+            '& .MuiTab-root': {
+              minHeight: 36,
+              px: 1.5,
+              py: 0.75,
+              borderRadius: 0.75,
+              fontSize: '0.8125rem',
+            },
+            '& .MuiTab-root.Mui-selected': { bgcolor: 'primary.light' },
+          }}
         >
           {logs.map((log) => (
             <Tab

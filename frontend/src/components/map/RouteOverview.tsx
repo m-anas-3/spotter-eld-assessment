@@ -15,13 +15,22 @@ export function RouteOverview({ route, locations, stops, legs }: RouteOverviewPr
   return (
     <>
       <Card sx={{ overflow: 'hidden' }}>
-        <Grid container>
-          <Grid size={{ xs: 12, lg: 8 }}>
+        <Grid container sx={{ alignItems: 'stretch' }}>
+          <Grid
+            size={{ xs: 12, lg: 8 }}
+            sx={{ height: { xs: 400, sm: 480, lg: 560 }, minWidth: 0 }}
+          >
             <TripMap route={route} locations={locations} stops={stops} />
           </Grid>
           <Grid
             size={{ xs: 12, lg: 4 }}
-            sx={{ borderTop: { xs: '1px solid', lg: 0 }, borderLeft: { lg: '1px solid' }, borderColor: 'divider' }}
+            sx={{
+              height: { xs: 'auto', lg: 560 },
+              minHeight: 0,
+              overflow: 'hidden',
+              borderTop: { xs: '1px solid', lg: 0 },
+              borderColor: 'divider',
+            }}
           >
             <StopsList stops={stops} />
           </Grid>

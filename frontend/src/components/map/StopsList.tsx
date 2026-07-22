@@ -8,7 +8,15 @@ interface StopsListProps {
 
 export function StopsList({ stops }: StopsListProps) {
   return (
-    <Box sx={{ height: '100%', p: 2 }}>
+    <Box
+      sx={{
+        height: { xs: 'auto', lg: '100%' },
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        p: 2,
+      }}
+    >
       <Typography component="h3" variant="h3">
         Route stops
       </Typography>
@@ -24,7 +32,14 @@ export function StopsList({ stops }: StopsListProps) {
         <Box
           component="ol"
           aria-label="Stops in route order"
-          sx={{ maxHeight: { lg: 560 }, overflowY: { lg: 'auto' }, listStyle: 'none', p: 0, m: 0 }}
+          sx={{
+            minHeight: 0,
+            flex: { lg: 1 },
+            overflowY: { lg: 'auto' },
+            listStyle: 'none',
+            p: 0,
+            m: 0,
+          }}
         >
           {stops.map((stop, index) => (
             <Box component="li" key={stop.id}>

@@ -8,6 +8,7 @@ import {
   CircularProgress,
   Divider,
   IconButton,
+  InputAdornment,
   Slider,
   Stack,
   TextField,
@@ -223,13 +224,22 @@ export function TripForm({ isLoading, isCollapsed, onToggleCollapsed, onSubmit }
                     <Box sx={{ pt: 0.5 }}>
                       <Stack
                         direction="row"
-                        sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}
+                        sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
                       >
-                        <Box>
-                          <Typography component="label" htmlFor="cycle-hours" variant="body2" sx={{ fontWeight: 600 }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            component="label"
+                            htmlFor="cycle-hours"
+                            variant="body2"
+                            sx={{ display: 'block', fontWeight: 600 }}
+                          >
                             Cycle hours already used
                           </Typography>
-                          <Typography variant="caption" color={cycleError ? 'error.main' : 'text.secondary'}>
+                          <Typography
+                            variant="caption"
+                            color={cycleError ? 'error.main' : 'text.secondary'}
+                            sx={{ display: 'block', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}
+                          >
                             {cycleError ?? `${value} of 70 hours used`}
                           </Typography>
                         </Box>
@@ -244,8 +254,18 @@ export function TripForm({ isLoading, isCollapsed, onToggleCollapsed, onSubmit }
                           }
                           onBlur={field.onBlur}
                           error={Boolean(cycleError)}
-                          sx={{ width: 88, flexShrink: 0 }}
+                          sx={{
+                            width: 108,
+                            flexShrink: 0,
+                            '& input': {
+                              textAlign: 'right',
+                              fontVariantNumeric: 'tabular-nums',
+                            },
+                          }}
                           slotProps={{
+                            input: {
+                              endAdornment: <InputAdornment position="end">hr</InputAdornment>,
+                            },
                             htmlInput: { min: 0, max: 70, step: 0.5, 'aria-label': 'Cycle hours already used' },
                           }}
                           inputRef={field.ref}
@@ -259,7 +279,10 @@ export function TripForm({ isLoading, isCollapsed, onToggleCollapsed, onSubmit }
                         step={0.5}
                         size="small"
                         aria-label="Cycle hours already used"
-                        sx={{ mt: 1, mb: -0.5 }}
+                        getAriaValueText={(hours) => `${hours} hours used`}
+                        valueLabelDisplay="auto"
+                        valueLabelFormat={(hours) => `${hours} hr`}
+                        sx={{ mt: 1.5, mb: 0, px: 0.25 }}
                       />
                     </Box>
                   )

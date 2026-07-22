@@ -63,15 +63,16 @@ export const appTheme = createTheme({
       lineHeight: 1.25,
     },
     h2: {
-      fontSize: '1.25rem',
+      fontSize: '1.375rem',
       fontWeight: 650,
       letterSpacing: '-0.015em',
       lineHeight: 1.3,
     },
     h3: {
-      fontSize: '1rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
+      fontSize: '1.0625rem',
+      fontWeight: 650,
+      letterSpacing: '-0.01em',
+      lineHeight: 1.35,
     },
     body1: { fontSize: '0.9375rem', lineHeight: 1.55 },
     body2: { fontSize: '0.8125rem', lineHeight: 1.5 },
@@ -107,6 +108,32 @@ export const appTheme = createTheme({
           minHeight: 40,
           borderRadius: 7,
           paddingInline: 16,
+          '&:focus-visible': {
+            outline: `3px solid ${alpha(colors.primary, 0.22)}`,
+            outlineOffset: 2,
+          },
+        },
+      },
+      variants: [
+        {
+          props: { variant: 'contained', color: 'primary' },
+          style: { '&:hover': { backgroundColor: colors.primaryHover } },
+        },
+        {
+          props: { variant: 'outlined', color: 'primary' },
+          style: {
+            borderColor: alpha(colors.primary, 0.45),
+            '&:hover': {
+              borderColor: colors.primary,
+              backgroundColor: colors.primarySoft,
+            },
+          },
+        },
+      ],
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
           '&:focus-visible': {
             outline: `3px solid ${alpha(colors.primary, 0.22)}`,
             outlineOffset: 2,
@@ -165,20 +192,26 @@ export const appTheme = createTheme({
     },
     MuiTabs: {
       styleOverrides: {
-        root: { minHeight: 44 },
-        indicator: { height: 2, backgroundColor: colors.primary },
+        root: { minHeight: 46 },
+        indicator: {
+          height: 3,
+          borderRadius: '3px 3px 0 0',
+          backgroundColor: colors.primary,
+        },
       },
     },
     MuiTab: {
       styleOverrides: {
         root: {
-          minHeight: 44,
-          padding: '8px 14px',
+          minHeight: 46,
+          padding: '9px 16px',
           textTransform: 'none',
-          fontWeight: 500,
-          fontSize: '0.8125rem',
+          fontWeight: 600,
+          fontSize: '0.875rem',
           color: colors.secondaryText,
-          '&.Mui-selected': { color: colors.text, fontWeight: 600 },
+          transition: 'color 160ms ease, background-color 160ms ease',
+          '&:hover': { color: colors.text, backgroundColor: colors.subtleSurface },
+          '&.Mui-selected': { color: colors.primaryHover, fontWeight: 650 },
           '&:focus-visible': { outline: `2px solid ${colors.primary}`, outlineOffset: -2 },
         },
       },
@@ -215,6 +248,19 @@ export const appTheme = createTheme({
     },
     MuiDivider: {
       styleOverrides: { root: { borderColor: colors.border } },
+    },
+    MuiAccordionSummary: {
+      styleOverrides: {
+        root: {
+          minHeight: 48,
+          '&:hover': { backgroundColor: colors.subtleSurface },
+          '&:focus-visible': {
+            outline: `2px solid ${colors.primary}`,
+            outlineOffset: -2,
+          },
+        },
+        content: { marginBlock: 12 },
+      },
     },
     MuiSlider: {
       styleOverrides: {

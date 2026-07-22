@@ -73,7 +73,6 @@ input {
   .trip-results-heading,
   .results-summary,
   .results-navigation,
-  .assumptions-section,
   .eld-screen-only {
     display: none !important;
   }

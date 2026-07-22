@@ -1,4 +1,4 @@
-import { Box, Card, LinearProgress, Typography } from '@mui/material'
+import { Box, Card, Typography } from '@mui/material'
 import type { TripSummary } from '../../types/trip'
 import { formatHours, formatMiles } from '../../utils/formatters'
 
@@ -8,8 +8,6 @@ interface TripSummaryCardsProps {
 
 export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
   const remainingCycleHours = Math.max(0, 70 - summary.final_cycle_used_hours)
-  const cycleUsagePercent = Math.min(100, (summary.final_cycle_used_hours / 70) * 100)
-  const isNearCycleLimit = remainingCycleHours <= 7
   const metrics = [
     { label: 'Distance', value: `${formatMiles(summary.total_distance_miles)} mi` },
     { label: 'Driving time', value: formatHours(summary.estimated_driving_hours) },
@@ -34,8 +32,6 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
             borderBottom: { xs: '1px solid', lg: 'none' },
             borderColor: 'divider',
           },
-          '& > *:nth-of-type(2n)': { borderRight: { xs: 'none', md: '1px solid', lg: '1px solid' } },
-          '& > *:nth-of-type(3n)': { borderRight: { md: 'none', lg: '1px solid' } },
           '& > *:nth-of-type(6n)': { borderRight: { lg: 'none' } },
           '& > *:nth-last-of-type(-n+2)': { borderBottom: { xs: 'none', md: '1px solid', lg: 'none' } },
           '& > *:nth-last-of-type(-n+3)': { borderBottom: { md: 'none', lg: 'none' } },
@@ -64,15 +60,6 @@ export function TripSummaryCards({ summary }: TripSummaryCardsProps) {
             )}
           </Box>
         ))}
-      </Box>
-
-      <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-        <LinearProgress
-          variant="determinate"
-          value={cycleUsagePercent}
-          color={isNearCycleLimit ? 'warning' : 'primary'}
-          aria-label={`${summary.final_cycle_used_hours} of 70 cycle hours used`}
-        />
       </Box>
     </Card>
   )

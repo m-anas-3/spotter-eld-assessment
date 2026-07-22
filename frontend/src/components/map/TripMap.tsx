@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Box, Stack } from '@mui/material'
+import { Alert, AlertTitle, Box, Button } from '@mui/material'
 import maplibregl, {
   type GeoJSONSource,
   type Map,
@@ -18,6 +18,7 @@ import './TripMap.css'
 const ROUTE_SOURCE_ID = 'trip-route'
 const ROUTE_CASING_LAYER_ID = 'trip-route-casing'
 const ROUTE_LAYER_ID = 'trip-route-line'
+const MAP_LOAD_TIMEOUT_MS = 12_000
 const SPECIAL_STOP_TYPES = new Set([
   'FUEL',
   'REQUIRED_BREAK',
@@ -43,8 +44,9 @@ export function TripMap({ route, locations, stops }: TripMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<Map | null>(null)
   const markersRef = useRef<Marker[]>([])
-  const [mapError, setMapError] = useState<string | null>(null)
   const styleUrl = import.meta.env.VITE_MAP_STYLE_URL?.trim()
+  const [mapUnavailable, setMapUnavailable] = useState(!styleUrl)
+  const [mapAttempt, setMapAttempt] = useState(0)
 
   const validRouteCoordinates = useMemo(
     () => route.coordinates.filter(isValidCoordinate),
@@ -52,42 +54,54 @@ export function TripMap({ route, locations, stops }: TripMapProps) {
   )
 
   useEffect(() => {
-    if (!containerRef.current || !styleUrl) return
+    if (!containerRef.current || !styleUrl) {
+      return
+    }
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: styleUrl,
-      center: [-96, 38],
-      zoom: 3,
-      cooperativeGestures: true,
-    })
+    let map: Map
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: styleUrl,
+        center: [-96, 38],
+        zoom: 3,
+        cooperativeGestures: true,
+      })
+    } catch {
+      const failureNotification = window.setTimeout(
+        () => setMapUnavailable(true),
+        0,
+      )
+      return () => window.clearTimeout(failureNotification)
+    }
     mapRef.current = map
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
 
+    let hasLoaded = false
+    const loadTimeout = window.setTimeout(() => {
+      if (!hasLoaded) setMapUnavailable(true)
+    }, MAP_LOAD_TIMEOUT_MS)
+
     const handleLoad = () => {
-      setMapError(null)
-    }
-    const handleError = () => {
-      setMapError(
-        'The street basemap could not be loaded completely. Check your internet connection and VITE_MAP_STYLE_URL.',
-      )
+      hasLoaded = true
+      window.clearTimeout(loadTimeout)
+      setMapUnavailable(false)
     }
     map.on('load', handleLoad)
-    map.on('error', handleError)
 
     const resizeObserver = new ResizeObserver(() => map.resize())
     resizeObserver.observe(containerRef.current)
 
     return () => {
       resizeObserver.disconnect()
+      window.clearTimeout(loadTimeout)
       markersRef.current.forEach((marker) => marker.remove())
       markersRef.current = []
       map.off('load', handleLoad)
-      map.off('error', handleError)
       map.remove()
       mapRef.current = null
     }
-  }, [styleUrl])
+  }, [mapAttempt, styleUrl])
 
   useEffect(() => {
     const map = mapRef.current
@@ -111,31 +125,49 @@ export function TripMap({ route, locations, stops }: TripMapProps) {
     return () => {
       map.off('load', drawTrip)
     }
-  }, [locations, stops, validRouteCoordinates])
+  }, [locations, mapAttempt, stops, validRouteCoordinates])
+
+  const retryMap = () => {
+    setMapUnavailable(false)
+    setMapAttempt((attempt) => attempt + 1)
+  }
 
   return (
-    <Box sx={{ position: 'relative', height: '100%', minHeight: { xs: 400, sm: 480, lg: 560 } }}>
+    <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: 0 }}>
       <Box
         ref={containerRef}
         role="region"
         aria-label="Interactive trip route map"
         sx={{
           width: '100%',
-          height: { xs: 400, sm: 480, lg: 560 },
+          height: '100%',
           overflow: 'hidden',
           bgcolor: 'action.hover',
         }}
       />
 
-      {(!styleUrl || mapError) && (
-        <Stack spacing={1} sx={{ position: 'absolute', zIndex: 2, top: 12, right: 12, left: 12 }}>
-          {!styleUrl && (
-            <Alert severity="warning">
-              Add VITE_MAP_STYLE_URL to the frontend environment to display the map.
-            </Alert>
-          )}
-          {mapError && <Alert severity="warning">{mapError}</Alert>}
-        </Stack>
+      {mapUnavailable && (
+        <Alert
+          severity="warning"
+          action={
+            styleUrl ? (
+              <Button color="inherit" size="small" onClick={retryMap}>
+                Retry map
+              </Button>
+            ) : undefined
+          }
+          sx={{
+            position: 'absolute',
+            zIndex: 2,
+            top: 12,
+            right: 12,
+            left: 12,
+            alignItems: 'center',
+          }}
+        >
+          <AlertTitle sx={{ mb: 0.25 }}>Map temporarily unavailable</AlertTitle>
+          Route and stop details are still available beside the map.
+        </Alert>
       )}
 
       {validRouteCoordinates.length < 2 && (
