@@ -184,15 +184,36 @@ python manage.py test
 
 ## Deployment
 
-Render, Railway, and similar hosts can install `requirements.txt`, set the
-environment variables above, run migrations, and use:
+### Vercel
 
-```bash
-gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+Create a Vercel project from the repository with `backend` as its Root
+Directory. Vercel detects `manage.py`, `config.wsgi`, `requirements.txt`, and
+Django static files automatically, so no custom build command, start command,
+or `vercel.json` is required. The `.python-version` file selects Python 3.13.
+
+Configure these production variables:
+
+```env
+DJANGO_DEBUG=false
+DJANGO_SECRET_KEY=replace-with-a-long-random-secret
+DJANGO_ALLOWED_HOSTS=your-api-project.vercel.app
+CORS_ALLOWED_ORIGINS=https://your-frontend-project.vercel.app
+OPENROUTESERVICE_API_KEY=your-server-side-key
 ```
 
-WhiteNoise serves collected static files. A `Procfile` and `Dockerfile` are
-included. To run the container locally:
+After deployment, check
+`https://your-api-project.vercel.app/api/health/`. The frontend must be a
+separate Vercel project with `frontend` as its Root Directory and
+`VITE_API_BASE_URL` set to the API URL.
+
+Vercel functions are stateless. SQLite is acceptable here because this API
+does not persist trip calculations, but it must be replaced with a hosted
+database before persistent application data is introduced.
+
+### Container or conventional Python host
+
+The included `Procfile` starts Gunicorn and WhiteNoise serves collected static
+files. To run the container locally:
 
 ```bash
 docker build -t trip-planner-api .
@@ -205,7 +226,8 @@ docker run --rm -p 8000:8000 \
   trip-planner-api
 ```
 
-Run `python manage.py migrate` as a release command on the deployment host.
+On a conventional persistent deployment host, run `python manage.py migrate`
+as a release command.
 
 ## Known limitations
 

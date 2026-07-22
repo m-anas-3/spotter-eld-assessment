@@ -40,7 +40,7 @@ RouteLog returns:
 - Django REST Framework
 - OpenRouteService through HTTPX
 - SQLite for local development
-- Gunicorn and WhiteNoise for deployment
+- WhiteNoise for static assets and Gunicorn for conventional Python hosts
 
 ## Architecture
 
@@ -203,54 +203,84 @@ npm run build
 npm run lint
 ```
 
-## Deployment
+## Deploying both applications on Vercel
 
-### Frontend: Vercel
+Create **two Vercel projects from the same GitHub repository**. Each project
+uses a different root directory.
 
-Create a Vercel project from this GitHub repository and configure:
+### 1. Deploy the Django API
+
+Import the repository in Vercel and configure the first project:
 
 ```text
+Project name:   routelog-api
+Root Directory: backend
+Framework:      auto-detected Django
+```
+
+Do not override the build or start command. Vercel detects `manage.py`, the
+WSGI application, `requirements.txt`, and Django static files. The committed
+`.python-version` selects Python 3.13.
+
+Add these environment variables to the API project:
+
+```env
+DJANGO_DEBUG=false
+DJANGO_SECRET_KEY=replace-with-a-long-random-secret
+DJANGO_ALLOWED_HOSTS=your-api-project.vercel.app
+CORS_ALLOWED_ORIGINS=https://your-frontend-project.vercel.app
+OPENROUTESERVICE_API_KEY=your-server-side-key
+```
+
+`DJANGO_ALLOWED_HOSTS` contains the deployed API hostname only, without
+`https://`. `CORS_ALLOWED_ORIGINS` contains
+the complete frontend origin, including `https://` and without a trailing
+slash. Never add the OpenRouteService key to the frontend project.
+
+Deploy the API and verify:
+
+```text
+https://your-api-project.vercel.app/api/health/
+```
+
+The expected response is `{"status":"ok"}`.
+
+### 2. Deploy the React frontend
+
+Import the same repository again as a second Vercel project:
+
+```text
+Project name:   routelog
 Root Directory: frontend
 Framework:      Vite
 Build Command:  npm run build
 Output:         dist
 ```
 
-Add these Vercel environment variables for Production and Preview:
+Add these environment variables to the frontend project:
 
 ```env
-VITE_API_BASE_URL=https://your-django-api.example.com
+VITE_API_BASE_URL=https://your-api-project.vercel.app
 VITE_MAP_STYLE_URL=https://tiles.openfreemap.org/styles/liberty
 ```
 
-Redeploy after changing a Vite environment variable because its value is
-embedded during the frontend build.
+Deploy the frontend. If its final production URL differs from the value in the
+API project's `CORS_ALLOWED_ORIGINS`, update that API variable and redeploy the
+API. Redeploy the frontend whenever a `VITE_` variable changes because Vite
+embeds those values at build time.
 
-### Backend: Render, Railway, or another Python host
+### 3. Production check
 
-Configure the service root as `backend` and use:
-
-```text
-Build: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
-Start: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
-```
-
-Production environment example:
-
-```env
-DJANGO_DEBUG=false
-DJANGO_SECRET_KEY=use-a-long-random-value
-DJANGO_ALLOWED_HOSTS=your-api-host.example.com
-CORS_ALLOWED_ORIGINS=https://your-project.vercel.app
-OPENROUTESERVICE_API_KEY=your-server-side-key
-```
-
-After deployment, verify both:
+Open the frontend, calculate a trip, and confirm that the browser's Network
+panel shows a successful request to:
 
 ```text
-https://your-api-host.example.com/api/health/
-https://your-project.vercel.app
+https://your-api-project.vercel.app/api/trips/calculate/
 ```
+
+Vercel functions are stateless. This application does not persist calculated
+trips, so its local SQLite configuration is sufficient for the current scope.
+Use a hosted database before adding persistent users, trips, or driver records.
 
 ## Project scope
 
