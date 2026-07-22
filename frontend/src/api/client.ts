@@ -59,6 +59,13 @@ export async function calculateTrip(
     )
   }
 
+  if (isOffline()) {
+    throw new ApiClientError(
+      "You're offline. Check your internet connection and try again.",
+      { code: 'OFFLINE' },
+    )
+  }
+
   let response: Response
   const controller = new AbortController()
   const timeoutId = globalThis.setTimeout(
@@ -85,8 +92,16 @@ export async function calculateTrip(
         { code: 'REQUEST_TIMEOUT' },
       )
     }
+
+    if (isOffline()) {
+      throw new ApiClientError(
+        "You're offline. Check your internet connection and try again.",
+        { code: 'OFFLINE' },
+      )
+    }
+
     throw new ApiClientError(
-      'Unable to reach the trip-planning service. Make sure the Django server is running and try again.',
+      "We couldn't connect to the trip-planning service. Check your internet connection and try again.",
       { code: 'NETWORK_ERROR' },
     )
   } finally {
@@ -110,6 +125,10 @@ export async function calculateTrip(
   }
 
   return payload
+}
+
+function isOffline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false
 }
 
 async function readJson(response: Response): Promise<unknown> {
